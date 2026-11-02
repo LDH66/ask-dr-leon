@@ -5,33 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ask Dr Leon - Vibe Coding Explained</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Google Fonts for Silicon Valley Chic typography -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="app-container">
         
-        <!-- PANE 1: Title Pane (Fixed 80px) -->
+        <!-- PANE 1: Title Pane -->
         <header class="pane title-pane">
             <div class="logo-area">
                 <span class="status-dot"></span>
                 <h1>Ask Dr Leon</h1>
             </div>
-            <div class="subtitle">Vibe Coding Explained</div>
+            <div class="subtitle">AI & Media Studio</div>
             <button class="menu-btn" aria-label="Menu">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
             </button>
         </header>
 
-        <!-- PANE 2: Input Pane (Fixed 120px) -->
+        <!-- PANE 2: Input Pane -->
         <section class="pane input-pane">
             <div class="input-form-wrapper">
                 <button id="micBtn" class="mic-btn" aria-label="Voice Input" title="Speak your question">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 </button>
                 <input type="text" id="userInput" placeholder="Ask Dr Leon a question..." autocomplete="off">
-                <!-- Pause/Stop Speech Button -->
                 <button id="stopAudioBtn" class="stop-audio-btn" aria-label="Stop Speaking" title="Stop Dr Leon speaking">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                 </button>
@@ -42,7 +40,7 @@
             <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
         </section>
 
-        <!-- PANE 3: Avatar Pane -->
+        <!-- PANE 3: Avatar Pane (Placed directly below Input Pane) -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
                 <img src="images/Default_avatar.jpg" alt="Dr Leon Avatar" id="avatarImage">
@@ -50,14 +48,18 @@
             </div>
         </section>
 
-        <!-- PANE 4: Graphics Pane (Dynamic Related Topics) -->
+        <!-- PANE 4: Graphics Pane (Bordered Box with 5+ Coding, Games & Media Topics) -->
         <section class="pane graphics-pane" id="graphicsPane">
-            <div class="topic-menu-label">Related Topics & Options:</div>
-            <div class="topic-pills" id="topicPills">
-                <button class="pill-btn primary" data-topic="What is HTML?">What is HTML?</button>
-                <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
-                <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
-                <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
+            <div class="topic-box-wrapper">
+                <div class="topic-menu-label">Related Topics & Studio Options</div>
+                <div class="topic-pills" id="topicPills">
+                    <button class="pill-btn primary" data-topic="What is HTML?">What is HTML?</button>
+                    <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
+                    <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
+                    <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
+                    <button class="pill-btn" data-topic="Game Dev Physics">Game Dev Physics</button>
+                    <button class="pill-btn" data-topic="Media & Audio Sync">Media & Audio Sync</button>
+                </div>
             </div>
         </section>
 
