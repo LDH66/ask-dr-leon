@@ -1,14 +1,33 @@
 const OpenAI = require("openai");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const DR_LEON_KB = "You are Dr Leon, an expert AI mentor with a British persona.";
+const DR_LEON_KB = "You are Dr Leon, an expert AI mentor with a British persona. Answer questions concisely, intelligently, and with a refined British tone.";
 const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
 
 exports.handler = async function (event) {
   try {
     const { prompt } = JSON.parse(event.body || "{}");
     
-    // Call ElevenLabs Text-to-Speech API
+    if (!prompt) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing prompt in request body" }),
+      };
+    }
+
+    // Step 1: Generate the intelligent answer using OpenAI and your Knowledge Base
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: DR_LEON_KB },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: 150,
+    });
+
+    const drLeonReply = completion.choices[0].message.content;
+
+    // Step 2: Convert Dr. Leon's text response into audio via ElevenLabs
     const ttsResponse = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`,
       {
@@ -19,7 +38,7 @@ exports.handler = async function (event) {
           "xi-api-key": process.env.ELEVENLABS_API_KEY,
         },
         body: JSON.stringify({
-          text: prompt || "Hello, this is a test.",
+          text: drLeonReply,
           model_id: "eleven_multilingual_v2",
         }),
       }
@@ -33,13 +52,16 @@ exports.handler = async function (event) {
       };
     }
 
-    // Convert audio stream to base64 to send back to the frontend
+    // Step 3: Send both the text reply and the audio back to the frontend
     const arrayBuffer = await ttsResponse.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString("base64");
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ audio: base64Audio }),
+      body: JSON.stringify({ 
+        text: drLeonReply, 
+        audio: base64Audio 
+      }),
     };
 
   } catch (err) {
