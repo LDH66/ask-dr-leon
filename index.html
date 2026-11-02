@@ -31,6 +31,10 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 </button>
                 <input type="text" id="userInput" placeholder="Ask Dr Leon a question..." autocomplete="off">
+                <!-- Pause/Stop Speech Button -->
+                <button id="stopAudioBtn" class="stop-audio-btn" aria-label="Stop Speaking" title="Stop Dr Leon speaking">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
                 <button id="submitBtn" class="submit-btn" aria-label="Submit">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 </button>
@@ -46,11 +50,11 @@
             </div>
         </section>
 
-        <!-- PANE 4: Graphics Pane (Related Topics placed directly under Avatar, no text response card) -->
+        <!-- PANE 4: Graphics Pane (Dynamic Related Topics) -->
         <section class="pane graphics-pane" id="graphicsPane">
             <div class="topic-menu-label">Related Topics & Options:</div>
             <div class="topic-pills" id="topicPills">
-                <button class="pill-btn primary" data-topic="Tell me more">Tell me more (1 min)</button>
+                <button class="pill-btn primary" data-topic="What is HTML?">What is HTML?</button>
                 <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
                 <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
                 <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
