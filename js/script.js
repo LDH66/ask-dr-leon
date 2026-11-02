@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUIHandlers();
 });
 
-// Setup robust audio recording compatible with iPhone Safari, Mac, and Android
+// Robust iPhone & Mac microphone recording setup
 function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
@@ -18,21 +18,25 @@ function setupNetlifyMicrophone() {
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn("getUserMedia not supported on this browser.");
         return;
     }
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        let options = { mimeType: 'audio/webm' };
+        // Detect iOS Safari vs Desktop audio encoding codecs
+        let options = {};
         if (MediaRecorder.isTypeSupported('audio/mp4')) {
-            options = { mimeType: 'audio/mp4' }; 
-        } else if (!MediaRecorder.isTypeSupported('audio/webm')) {
-            options = {}; 
+            options = { mimeType: 'audio/mp4' }; // Ideal for iPhone Safari
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            options = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+            options = { mimeType: 'audio/webm' };
         }
 
         try {
             mediaRecorder = new MediaRecorder(stream, options);
         } catch (e) {
-            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder = new MediaRecorder(stream); // Fallback to default
         }
 
         mediaRecorder.ondataavailable = (event) => {
@@ -42,7 +46,7 @@ function setupNetlifyMicrophone() {
         };
 
         mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
             audioChunks = [];
             
             if (listeningIndicator) {
@@ -82,7 +86,8 @@ function setupNetlifyMicrophone() {
             });
         }
     }).catch(err => {
-        console.warn("Microphone access restricted or unavailable:", err);
+        console.warn("Microphone permission denied or unavailable:", err);
+        alert("Microphone access is required on iOS. Please ensure permissions are allowed in Safari settings.");
     });
 }
 
@@ -163,12 +168,9 @@ function processUserQuery(query) {
     const q = query.toLowerCase();
     let answerText = "";
 
-    // 1-Minute Deep-Dive Expansion Handler
     if (q.includes('tell me more')) {
         answerText = `Here is a comprehensive one-minute breakdown regarding ${lastAskedQuery || 'our previous topic'}. When developing modern digital solutions, depth of execution matters. By combining clean frontend architecture, reliable serverless endpoints on Netlify, and precise AI prompting, you eliminate friction, maintain maintainable codebases, and deliver robust software lightning fast.`;
-    } 
-    // Specific Knowledgebase Topics
-    else if (q.includes('vibe coding')) {
+    } else if (q.includes('vibe coding')) {
         answerText = "Vibe coding represents a brilliant paradigm shift where you act as the visionary architect. Instead of writing boilerplate syntax line by line, you converse with AI to build, test, and deploy entire applications effortlessly.";
     } else if (q.includes('html')) {
         answerText = "HyperText Markup Language, or HTML, forms the foundational skeleton of any web page, structuring text, images, inputs, and semantic sections so browsers can render them correctly.";
@@ -186,10 +188,7 @@ function processUserQuery(query) {
         answerText = `Regarding your question about ${query}, mastering this concept helps you build cleaner systems, connect APIs securely, and direct AI developer tools with absolute precision.`;
     }
 
-    // Dynamically update related topic pills based on the current question
     updateRelatedTopics(q);
-
-    // Speak response aloud in British male voice
     speakBritishAnswer(answerText);
 }
 
@@ -230,11 +229,11 @@ function updateRelatedTopics(queryKey) {
     bindTopicPills(); 
 }
 
-// Speak text aloud forcing a British male voice on iPhone, Mac, and desktop
+// Speak text aloud forcing a British male voice
 function speakBritishAnswer(text) {
     if (!('speechSynthesis' in window)) return;
 
-    window.speechSynthesis.cancel(); // Stop any ongoing speech
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
 
