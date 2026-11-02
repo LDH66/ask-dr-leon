@@ -122,38 +122,33 @@ function setupUIHandlers() {
     });
 }
 
-// Send query to backend AI engine and trigger browser speech synthesis
-async function processUserQuery(query) {
-    try {
-        console.log("Sending query to AI engine:", query);
-        
-        // Call your backend AI function (or handle response)
-        const response = await fetch('/.netlify/functions/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: query })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            speakAnswer(data.reply);
-        } else {
-            // Fallback: If chat function isn't built yet, use browser speech directly
-            speakAnswer(`Dr Leon is answering your question about: ${query}`);
-        }
-    } catch (error) {
-        console.error("Engine processing error:", error);
-        speakAnswer("I received your question, but encountered an error connecting to the engine.");
+// Process query and immediately speak response aloud
+function processUserQuery(query) {
+    console.log("Processing query:", query);
+    
+    let answerText = `You asked about ${query}. Vibe coding lets you build apps seamlessly using AI prompts instead of writing every line manually.`;
+    
+    if (query.toLowerCase().includes('vibe coding')) {
+        answerText = "Vibe coding is the revolutionary way to build software where you act as the director, guiding AI to write code while you focus on vision and architecture.";
+    } else if (query.toLowerCase().includes('prompt formula')) {
+        answerText = "The 4 part prompt formula consists of role definition, context, clear constraints, and expected output format.";
+    } else if (query.toLowerCase().includes('apis')) {
+        answerText = "Connecting APIs allows your frontend interface to securely talk to backend services like OpenAI.";
     }
+
+    speakAnswer(answerText);
 }
 
-// Speak the answer aloud using browser speech synthesis
+// Speak text aloud using browser speech synthesis
 function speakAnswer(text) {
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop any ongoing speech
+        window.speechSynthesis.cancel(); // Stop any overlapping speech
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
         window.speechSynthesis.speak(utterance);
+        console.log("Speaking aloud:", text);
+    } else {
+        console.warn("Speech synthesis not supported in this browser.");
     }
 }
