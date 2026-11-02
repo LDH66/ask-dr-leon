@@ -122,22 +122,10 @@ function setupUIHandlers() {
     });
 }
 
-// Placeholder to handle responses and display them in the knowledge hub
+// Display responses in the knowledge hub UI
 function processUserQuery(query) {
     const responseDisplay = document.getElementById('responseDisplay');
     if (responseDisplay) {
         responseDisplay.innerHTML = `<strong>You asked:</strong> "${query}"<br><br><em>Dr Leon is processing your request...</em>`;
     }
-    // Future expansion: hook up your response synthesis or text generation here
 }
-
-```
-
----
-
-### A Note on Voice Cloning (ElevenLabs)
-
-Regarding your comment about **not creating a voice yet**:
-
-* **Whisper** (which is fully handled by your OpenAI account) only converts your *spoken voice input* into text. It does not require a custom voice clone.
-* If you want Dr. Leon to **speak answers back to you out loud** with a custom cloned voice in future steps, that is when you will integrate **ElevenLabs**. For now, getting text input and Whisper speech-to-text working is your baseline milestone!
