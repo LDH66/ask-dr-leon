@@ -1,29 +1,33 @@
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
+let lastAskedQuery = "";
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNetlifyMicrophone();
     setupUIHandlers();
 });
 
-// Setup robust audio recording compatible with Mac, iPhone, and Android
+// Setup robust audio recording compatible with iPhone Safari, Mac, and Android
 function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
 
+    // Ensure mic button is always visible on iPhone/Mac web views
+    if (micBtn) {
+        micBtn.style.display = 'flex';
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        if (micBtn) micBtn.style.display = 'none';
         return;
     }
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        // Detect best supported audio mime type for iOS vs Desktop
         let options = { mimeType: 'audio/webm' };
         if (MediaRecorder.isTypeSupported('audio/mp4')) {
             options = { mimeType: 'audio/mp4' }; // Optimized for iOS Safari
         } else if (!MediaRecorder.isTypeSupported('audio/webm')) {
-            options = {}; // Fallback to browser default
+            options = {}; 
         }
 
         try {
@@ -79,8 +83,7 @@ function setupNetlifyMicrophone() {
             });
         }
     }).catch(err => {
-        console.warn("Microphone access denied or unavailable:", err);
-        if (micBtn) micBtn.style.display = 'none';
+        console.warn("Microphone access restricted or unavailable:", err);
     });
 }
 
@@ -107,11 +110,11 @@ async function sendAudioToBackend(audioBlob) {
     }
 }
 
-// Setup keyboard and click bindings for text input and topic buttons
+// Setup keyboard bindings, stop speech button, and topic buttons
 function setupUIHandlers() {
     const submitBtn = document.getElementById('submitBtn');
+    const stopAudioBtn = document.getElementById('stopAudioBtn');
     const userInput = document.getElementById('userInput');
-    const topicPills = document.querySelectorAll('.pill-btn');
 
     if (submitBtn && userInput) {
         submitBtn.addEventListener('click', () => {
@@ -130,6 +133,22 @@ function setupUIHandlers() {
         });
     }
 
+    if (stopAudioBtn) {
+        stopAudioBtn.addEventListener('click', () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        });
+    }
+
+    bindTopicPills();
+}
+
+// Attach click handlers to topic pills dynamically
+function bindTopicPills() {
+    const topicPills = document.querySelectorAll('.pill-btn');
+    const userInput = document.getElementById('userInput');
+
     topicPills.forEach(pill => {
         pill.addEventListener('click', () => {
             const topic = pill.getAttribute('data-topic');
@@ -139,39 +158,84 @@ function setupUIHandlers() {
     });
 }
 
-// Process any user question dynamically and speak response aloud
+// Process queries, generate answers, and dynamically update related pills
 function processUserQuery(query) {
+    lastAskedQuery = query;
     const q = query.toLowerCase();
-    let answerText = `Regarding your question about ${query}, that is a core part of modern software engineering. When building applications, clear system architecture and prompt design ensure high-quality results.`;
+    let answerText = "";
 
-    // Dynamic keyword matching + smart fallback for any custom question (e.g. CSS, databases, etc.)
-    if (q.includes('vibe coding')) {
+    // 1-Minute Deep-Dive Expansion Handler
+    if (q.includes('tell me more')) {
+        answerText = `Here is a comprehensive one-minute breakdown regarding ${lastAskedQuery || 'our previous topic'}. When developing modern digital solutions, depth of execution matters. By combining clean frontend architecture, reliable serverless endpoints on Netlify, and precise AI prompting, you eliminate friction, maintain maintainable codebases, and deliver robust software lightning fast.`;
+    } 
+    // Specific Knowledgebase Topics
+    else if (q.includes('vibe coding')) {
         answerText = "Vibe coding represents a brilliant paradigm shift where you act as the visionary architect. Instead of writing boilerplate syntax line by line, you converse with AI to build, test, and deploy entire applications effortlessly.";
+    } else if (q.includes('html')) {
+        answerText = "HyperText Markup Language, or HTML, forms the foundational skeleton of any web page, structuring text, images, inputs, and semantic sections so browsers can render them correctly.";
     } else if (q.includes('prompt formula') || q.includes('formula')) {
         answerText = "The four-part prompt formula consists of: First, defining a clear role for your AI. Second, providing rich context. Third, setting strict constraints. And fourth, specifying the precise output format you require.";
     } else if (q.includes('api') || q.includes('connecting')) {
         answerText = "Connecting APIs allows your frontend user interface to securely communicate with powerhouse backend services like OpenAI, managing authentication and data exchange smoothly behind the scenes.";
     } else if (q.includes('css') || q.includes('style')) {
         answerText = "Cascading Style Sheets, or CSS, controls the visual layout, typography, and responsive design of your web interface, ensuring a clean and polished user experience across all devices.";
-    } else if (q.includes('tell me more')) {
-        answerText = "Welcome to the future of development! With Ask Dr Leon, you can combine modern serverless architecture, natural voice interactions, and AI prompt engineering to build production-ready applications in record time.";
     } else {
-        // Dynamic smart response for any custom query typed or spoken (like "what is css")
-        answerText = `You asked about ${query}. In the context of modern development, mastering this concept helps you build cleaner systems, connect APIs more securely, and direct AI tools with absolute precision.`;
+        // Smart fallback for any custom query
+        answerText = `Regarding your question about ${query}, mastering this concept helps you build cleaner systems, connect APIs securely, and direct AI developer tools with absolute precision.`;
     }
 
+    // Dynamically update related topic pills based on the current question
+    updateRelatedTopics(q);
+
+    // Speak response aloud in British male voice
     speakBritishAnswer(answerText);
 }
 
-// Speak text aloud forcing an optimized British male voice on iPhone, Mac, and desktop
+// Dynamically refresh related topic pills based on context
+function updateRelatedTopics(queryKey) {
+    const topicPillsContainer = document.getElementById('topicPills');
+    if (!topicPillsContainer) return;
+
+    let newPillsHTML = `<button class="pill-btn primary" data-topic="Tell me more">Tell me more</button>`;
+
+    if (queryKey.includes('vibe coding')) {
+        newPillsHTML += `
+            <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
+            <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
+            <button class="pill-btn" data-topic="What is HTML?">What is HTML?</button>
+        `;
+    } else if (queryKey.includes('html') || queryKey.includes('css')) {
+        newPillsHTML += `
+            <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
+            <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
+            <button class="pill-btn" data-topic="Responsive Design">Responsive Design</button>
+        `;
+    } else if (queryKey.includes('api')) {
+        newPillsHTML += `
+            <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
+            <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
+            <button class="pill-btn" data-topic="Security and Tokens">Security & Tokens</button>
+        `;
+    } else {
+        newPillsHTML += `
+            <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
+            <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
+            <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
+        `;
+    }
+
+    topicPillsContainer.innerHTML = newPillsHTML;
+    bindTopicPills(); // Re-bind click events to the newly injected pills
+}
+
+// Speak text aloud forcing a British male voice on iPhone, Mac, and desktop
 function speakBritishAnswer(text) {
     if (!('speechSynthesis' in window)) return;
 
-    window.speechSynthesis.cancel(); // Stop any overlapping audio
+    window.speechSynthesis.cancel(); // Stop any ongoing speech
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
 
-    // Dynamically query voices right at speech time to ensure iOS/Safari populates them
     const voices = window.speechSynthesis.getVoices();
     const britishVoice = voices.find(v => 
         v.lang === 'en-GB' && (v.name.toLowerCase().includes('male') || v.name.includes('Oliver') || v.name.includes('Daniel') || v.name.includes('Arthur') || v.name.includes('George') || v.name.includes('Ryan'))
@@ -181,8 +245,8 @@ function speakBritishAnswer(text) {
         utterance.voice = britishVoice;
     }
 
-    utterance.rate = 0.98; // Natural conversational pacing
-    utterance.pitch = 0.92; // Warmer male pitch to eliminate the high robotic tone
+    utterance.rate = 0.98; 
+    utterance.pitch = 0.92; // Natural male tone
     
     window.speechSynthesis.speak(utterance);
 }
