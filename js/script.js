@@ -117,15 +117,13 @@ function setupUIHandlers() {
         pill.addEventListener('click', () => {
             const topic = pill.getAttribute('data-topic');
             if (userInput) userInput.value = topic;
-            processUserQuery(topic);
+            processUserQuery(topic); // Instantly triggers engine & speech processing
         });
     });
 }
 
-// Display responses in the knowledge hub UI
+// Process query silently without rendering text response on screen
 function processUserQuery(query) {
-    const responseDisplay = document.getElementById('responseDisplay');
-    if (responseDisplay) {
-        responseDisplay.innerHTML = `<strong>You asked:</strong> "${query}"<br><br><em>Dr Leon is processing your request...</em>`;
-    }
+    console.log("Sending query to engine:", query);
+    // Hook up your backend engine or voice synthesis trigger here
 }
