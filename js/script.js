@@ -1,79 +1,116 @@
+let mediaRecorder;
+let audioChunks = [];
+let isRecording = false;
+let britishVoice = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    setupSpeechRecognition();
+    setupNetlifyMicrophone();
     setupUIHandlers();
+    loadBritishVoice();
 });
 
-// Setup continuous automatic speech recognition (Hands-free mic)
-function setupSpeechRecognition() {
+// Load and cache British male voice safely (handles async browser loading)
+function loadBritishVoice() {
+    if (!('speechSynthesis' in window)) return;
+
+    function setVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        // Look for British male voices first, then fall back to any British English voice
+        britishVoice = voices.find(v => 
+            v.lang === 'en-GB' && (v.name.toLowerCase().includes('male') || v.name.includes('Oliver') || v.name.includes('Daniel') || v.name.includes('Arthur') || v.name.includes('George'))
+        ) || voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
+    }
+
+    setVoice();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = setVoice;
+    }
+}
+
+// Setup robust audio recording using Netlify Whisper backend (works perfectly on Mac & iOS)
+function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
-    const userInput = document.getElementById('userInput');
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-        console.warn("Speech Recognition API not supported in this browser.");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         if (micBtn) micBtn.style.display = 'none';
         return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-GB'; // British English
-    recognition.interimResults = true;
-    recognition.continuous = false; // Automatically stops when user stops speaking
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
 
-    let isListening = false;
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
 
-    if (micBtn) {
-        micBtn.addEventListener('click', () => {
-            if (!isListening) {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error("Recognition start error:", e);
-                }
-            } else {
-                recognition.stop();
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioChunks = [];
+            
+            if (listeningIndicator) {
+                listeningIndicator.textContent = "Processing with Whisper...";
+                listeningIndicator.style.display = 'block';
             }
+
+            const transcribedText = await sendAudioToBackend(audioBlob);
+            
+            if (transcribedText) {
+                const userInput = document.getElementById('userInput');
+                if (userInput) userInput.value = transcribedText;
+                processUserQuery(transcribedText);
+            }
+            
+            if (listeningIndicator) {
+                listeningIndicator.style.display = 'none';
+            }
+        };
+
+        if (micBtn) {
+            // Click once to start recording, click again to stop & process via Whisper
+            micBtn.addEventListener('click', () => {
+                if (!isRecording) {
+                    audioChunks = [];
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('listening');
+                    if (listeningIndicator) {
+                        listeningIndicator.textContent = "Listening... Tap mic again to send.";
+                        listeningIndicator.style.display = 'block';
+                    }
+                } else {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    micBtn.classList.remove('listening');
+                }
+            });
+        }
+    }).catch(err => {
+        console.warn("Microphone access denied or unavailable:", err);
+        if (micBtn) micBtn.style.display = 'none';
+    });
+}
+
+// Send recorded audio to Netlify Serverless Function for OpenAI Whisper transcription
+async function sendAudioToBackend(audioBlob) {
+    try {
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        
+        return new Promise((resolve) => {
+            reader.onloadend = async () => {
+                const base64Audio = reader.result.split(',')[1];
+                const response = await fetch('/.netlify/functions/transcribe', {
+                    method: 'POST',
+                    body: base64Audio
+                });
+                const data = await response.json();
+                resolve(data.text);
+            };
         });
-    }
-
-    recognition.onstart = () => {
-        isListening = true;
-        micBtn.classList.add('listening');
-        if (listeningIndicator) {
-            listeningIndicator.textContent = "Listening... Speak naturally (auto-stops when finished)";
-            listeningIndicator.style.display = 'block';
-        }
-    };
-
-    recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript;
-        }
-        if (userInput) {
-            userInput.value = transcript;
-        }
-    };
-
-    recognition.onerror = (event) => {
-        console.warn("Speech recognition error:", event.error);
-        stopListeningState();
-    };
-
-    recognition.onend = () => {
-        stopListeningState();
-        const query = userInput ? userInput.value.trim() : '';
-        if (query) {
-            processUserQuery(query);
-        }
-    };
-
-    function stopListeningState() {
-        isListening = false;
-        if (micBtn) micBtn.classList.remove('listening');
-        if (listeningIndicator) listeningIndicator.style.display = 'none';
+    } catch (error) {
+        console.error("Transcription error:", error);
+        return null;
     }
 }
 
@@ -89,12 +126,12 @@ function setupUIHandlers() {
             if (query) processUserQuery(query);
         });
 
-        // Pressing Enter stops/submits input immediately
+        // Pressing Enter submits immediately
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const query = userInput.value.trim();
                 if (query) {
-                    userInput.blur(); // Dismiss keyboard on mobile
+                    userInput.blur();
                     processUserQuery(query);
                 }
             }
@@ -128,7 +165,7 @@ function processUserQuery(query) {
     speakBritishAnswer(answerText);
 }
 
-// Speak text aloud using a British English male voice
+// Speak text aloud using the loaded British male voice
 function speakBritishAnswer(text) {
     if (!('speechSynthesis' in window)) return;
 
@@ -136,18 +173,12 @@ function speakBritishAnswer(text) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
 
-    // Scan available voices for a British Male voice (e.g., UK English male, Oliver, Daniel, George, etc.)
-    const voices = window.speechSynthesis.getVoices();
-    const britishMaleVoice = voices.find(v => 
-        v.lang === 'en-GB' && (v.name.toLowerCase().includes('male') || v.name.includes('Oliver') || v.name.includes('Daniel') || v.name.includes('Arthur') || v.name.includes('George'))
-    ) || voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
-
-    if (britishMaleVoice) {
-        utterance.voice = britishMaleVoice;
+    if (britishVoice) {
+        utterance.voice = britishVoice;
     }
 
     utterance.rate = 1.0; 
-    utterance.pitch = 0.95; // Slightly lower pitch for a natural male cadence
+    utterance.pitch = 0.95; // Natural male conversational pitch
     
     window.speechSynthesis.speak(utterance);
 }
