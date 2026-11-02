@@ -18,71 +18,75 @@ function setupNetlifyMicrophone() {
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn("getUserMedia not supported on this browser.");
         return;
     }
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        let options = {};
-        if (MediaRecorder.isTypeSupported('audio/mp4')) {
-            options = { mimeType: 'audio/mp4' }; 
-        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-            options = { mimeType: 'audio/webm' };
-        }
+    micBtn.addEventListener('click', async () => {
+        if (!isRecording) {
+            try {
+                // Explicitly request audio stream with mobile constraints
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: true, noiseSuppression: true } 
+                });
 
-        try {
-            mediaRecorder = new MediaRecorder(stream, options);
-        } catch (e) {
-            mediaRecorder = new MediaRecorder(stream); 
-        }
+                let options = { mimeType: 'audio/mp4' };
+                if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+                    options = { mimeType: 'audio/webm' };
+                }
 
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                audioChunks.push(event.data);
-            }
-        };
+                mediaRecorder = new MediaRecorder(stream, options);
+                audioChunks = [];
 
-        mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
-            audioChunks = [];
-            
-            if (listeningIndicator) {
-                listeningIndicator.textContent = "Processing with Whisper...";
-                listeningIndicator.style.display = 'block';
-            }
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
 
-            const transcribedText = await sendAudioToBackend(audioBlob);
-            
-            if (transcribedText) {
-                const userInput = document.getElementById('userInput');
-                if (userInput) userInput.value = transcribedText;
-                processUserQuery(transcribedText);
-            }
-            
-            if (listeningIndicator) {
-                listeningIndicator.style.display = 'none';
-            }
-        };
+                mediaRecorder.onstop = async () => {
+                    // Stop tracks to release microphone hardware light
+                    stream.getTracks().forEach(track => track.stop());
 
-        if (micBtn) {
-            micBtn.addEventListener('click', () => {
-                if (!isRecording) {
-                    audioChunks = [];
-                    mediaRecorder.start();
-                    isRecording = true;
-                    micBtn.classList.add('listening');
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
+                    
                     if (listeningIndicator) {
-                        listeningIndicator.textContent = "Listening... Tap mic again to send.";
+                        listeningIndicator.textContent = "Processing with Whisper...";
                         listeningIndicator.style.display = 'block';
                     }
-                } else {
-                    mediaRecorder.stop();
-                    isRecording = false;
-                    micBtn.classList.remove('listening');
+
+                    const transcribedText = await sendAudioToBackend(audioBlob);
+                    
+                    if (transcribedText) {
+                        const userInput = document.getElementById('userInput');
+                        if (userInput) userInput.value = transcribedText;
+                        processUserQuery(transcribedText);
+                    }
+                    
+                    if (listeningIndicator) {
+                        listeningIndicator.style.display = 'none';
+                    }
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add('listening');
+                if (listeningIndicator) {
+                    listeningIndicator.textContent = "Listening... Tap mic again to send.";
+                    listeningIndicator.style.display = 'block';
                 }
-            });
+
+            } catch (err) {
+                console.warn("Microphone hardware error on iOS/Mac:", err);
+                alert("Could not access microphone. Please check browser and device permissions.");
+            }
+        } else {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            micBtn.classList.remove('listening');
         }
-    }).catch(err => {
-        console.warn("Microphone permission denied or unavailable:", err);
     });
 }
 
@@ -157,22 +161,22 @@ function bindTopicPills() {
     });
 }
 
-// Process user queries with guaranteed fail-safe fallback
+// Process user queries by querying the OpenAI chat backend with local fallback
 async function processUserQuery(query) {
     lastAskedQuery = query;
     const q = query.toLowerCase();
 
-    // 1. Update related pills immediately
+    // 1. Update related topic pills immediately
     updateRelatedTopics(q);
 
-    // 2. Handle "Tell me more" locally & instantly
+    // 2. Handle 1-minute deep-dive expansion locally & instantly
     if (q.includes('tell me more')) {
         const deepDiveText = `Here is a comprehensive one-minute breakdown regarding ${lastAskedQuery || 'our previous topic'}. When developing modern digital solutions, depth of execution matters. By combining clean frontend architecture, reliable serverless endpoints on Netlify, and precise AI prompting, you eliminate friction, maintain maintainable codebases, and deliver robust software lightning fast.`;
         speakBritishAnswer(deepDiveText);
         return;
     }
 
-    // 3. Attempt OpenAI Backend, with instant local fallback on any network error
+    // 3. Attempt OpenAI backend interrogation
     try {
         const response = await fetch('/.netlify/functions/chat', {
             method: 'POST',
@@ -189,7 +193,7 @@ async function processUserQuery(query) {
         console.warn("Backend chat fetch failed, using smart local fallback:", error);
     }
 
-    // Default smart local response if backend is unreachable
+    // 4. Fallback response if backend is offline
     let fallbackText = `Regarding your question about ${query}, mastering this core concept helps you build cleaner systems, connect APIs securely, and direct AI tools with absolute precision.`;
     
     if (q.includes('vibe coding')) {
