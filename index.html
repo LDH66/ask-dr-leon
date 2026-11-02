@@ -24,7 +24,7 @@
             </button>
         </header>
 
-        <!-- PANE 2: Input Pane (Fixed 120px) - Directly below Title Pane -->
+        <!-- PANE 2: Input Pane (Fixed 120px) -->
         <section class="pane input-pane">
             <div class="input-form-wrapper">
                 <button id="micBtn" class="mic-btn" aria-label="Voice Input" title="Speak your question">
@@ -38,7 +38,7 @@
             <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
         </section>
 
-        <!-- PANE 3: Avatar Pane (16:9 Aspect Ratio, no text overlays) -->
+        <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
                 <img src="images/Default_avatar.jpg" alt="Dr Leon Avatar" id="avatarImage">
@@ -46,13 +46,8 @@
             </div>
         </section>
 
-        <!-- PANE 4: Graphics Pane (Maximized space for interactive content and related topics) -->
+        <!-- PANE 4: Graphics Pane (Related Topics placed directly under Avatar, no text response card) -->
         <section class="pane graphics-pane" id="graphicsPane">
-            <div class="content-card">
-                <h3>Interactive Knowledge Hub</h3>
-                <p id="responseDisplay">Select a topic below or use your voice to ask a question. Dr Leon will speak the answer aloud.</p>
-            </div>
-            
             <div class="topic-menu-label">Related Topics & Options:</div>
             <div class="topic-pills" id="topicPills">
                 <button class="pill-btn primary" data-topic="Tell me more">Tell me more (1 min)</button>
