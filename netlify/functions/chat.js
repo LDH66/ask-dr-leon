@@ -14,7 +14,7 @@ INSTRUCTIONS:
 - Do not use markdown like bullets or bold text, as this will be converted directly to speech.
 `;
 
-const ELEVEN_VOICE_ID = "4b8d101937c957cd6943d009f0968cc53850c2c59fa321c10e13150ca3ef84a1";
+const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
