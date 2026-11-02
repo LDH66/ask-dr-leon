@@ -1,10 +1,3 @@
-Here is the complete, updated replacement code for your `js/script.js` file.
-
-This version includes the missing `DOMContentLoaded` initialization so the microphone hooks up automatically when the page loads, alongside text submission handlers and topic button listeners so everything works smoothly.
-
-### Complete Replacement Code for `js/script.js`
-
-```javascript
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
