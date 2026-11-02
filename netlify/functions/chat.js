@@ -14,7 +14,6 @@ INSTRUCTIONS:
 - Do not use markdown like bullets or bold text, as this will be converted directly to speech.
 `;
 
-// REPLACE THIS WITH YOUR ELEVENLABS VOICE ID
 const ELEVEN_VOICE_ID = "4b8d101937c957cd6943d009f0968cc53850c2c59fa321c10e13150ca3ef84a1";
 
 exports.handler = async function (event) {
@@ -23,7 +22,12 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { prompt } = JSON.parse(event.body);
+    if (!process.env.ELEVENLABS_API_KEY) {
+      throw new Error("Missing ELEVENLABS_API_KEY in Netlify environment variables.");
+    }
+
+    const body = JSON.parse(event.body || "{}");
+    const prompt = body.prompt;
 
     if (!prompt) {
       return { 
@@ -45,7 +49,7 @@ exports.handler = async function (event) {
 
     const replyText = completion.choices[0].message.content.trim();
 
-    // 2. Stream audio directly from ElevenLabs using your custom voice clone
+    // 2. Stream audio from ElevenLabs
     const ttsResponse = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`,
       {
@@ -68,11 +72,10 @@ exports.handler = async function (event) {
 
     if (!ttsResponse.ok) {
       const errorText = await ttsResponse.text();
-      console.error("ElevenLabs API Error:", errorText);
-      throw new Error(`ElevenLabs error: ${ttsResponse.statusText}`);
+      console.error("ElevenLabs API Error Details:", errorText);
+      throw new Error(`ElevenLabs returned status ${ttsResponse.status}: ${errorText}`);
     }
 
-    // 3. Convert MP3 buffer to Base64 to return to script.js for instant playback
     const audioBuffer = await ttsResponse.arrayBuffer();
     const base64Audio = Buffer.from(audioBuffer).toString("base64");
 
@@ -86,7 +89,7 @@ exports.handler = async function (event) {
     };
 
   } catch (error) {
-    console.error("Chat backend error:", error);
+    console.error("CRITICAL BACKEND ERROR:", error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }),
