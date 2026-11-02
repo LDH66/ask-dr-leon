@@ -1,20 +1,289 @@
-.stop-audio-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #fff;
+/* Reset and Box Sizing */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    background-color: #0b0f19;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* App Container - Mobile-First Framing on Desktop & Fullscreen on Mobile */
+.app-container {
+    width: 100%;
+    max-width: 420px;
+    height: 100vh;
+    max-height: 900px;
+    background: #111827;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    border-radius: 0;
+    overflow: hidden;
+}
+
+@media (min-width: 480px) {
+    .app-container {
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Pane Base Styling */
+.pane {
+    width: 100%;
+}
+
+/* PANE 1: Title Pane (Fixed Height) */
+.title-pane {
+    height: 70px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(17, 24, 39, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #10b981;
     border-radius: 50%;
-    width: 38px;
-    height: 38px;
+    box-shadow: 0 0 8px #10b981;
+}
+
+.title-pane h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.subtitle {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    display: none;
+}
+
+@media (min-width: 360px) {
+    .subtitle {
+        display: block;
+    }
+}
+
+.menu-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* PANE 2: Input Pane (Fixed Height) */
+.input-pane {
+    height: 85px;
+    padding: 12px 16px;
+    background: rgba(17, 24, 39, 0.95);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.input-form-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50px;
+    padding: 4px 6px;
+    height: 48px;
+}
+
+.mic-btn, .submit-btn, .stop-audio-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    border-radius: 50%;
     transition: all 0.2s ease;
-    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.mic-btn:hover, .submit-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mic-btn.listening {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+    animation: pulse-mic 1.5s infinite;
+}
+
+@keyframes pulse-mic {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.stop-audio-btn {
+    color: #9ca3af;
 }
 
 .stop-audio-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
     color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.input-form-wrapper input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 0.9rem;
+    padding: 0 8px;
+    outline: none;
+}
+
+.input-form-wrapper input::placeholder {
+    color: #6b7280;
+}
+
+.submit-btn {
+    background: #4f46e5;
+    color: #ffffff;
+}
+
+.submit-btn:hover {
+    background: #4338ca;
+}
+
+.listening-indicator {
+    font-size: 0.7rem;
+    color: #ef4444;
+    text-align: center;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* PANE 3: Avatar Pane (Flexible Fill) */
+.avatar-pane {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 10px;
+    min-height: 180px;
+}
+
+.avatar-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-wrapper img {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 2;
+}
+
+.avatar-glow {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* PANE 4: Graphics Pane / Related Topics (Fixed Bottom Section) */
+.graphics-pane {
+    padding: 12px 16px 20px 16px;
+    background: rgba(17, 24, 39, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.topic-menu-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.topic-pills {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none; /* Hide scrollbar for clean look */
+}
+
+.topic-pills::-webkit-scrollbar {
+    display: none;
+}
+
+.pill-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #d1d5db;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pill-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pill-btn.primary {
+    background: rgba(79, 70, 229, 0.2);
+    border-color: rgba(79, 70, 229, 0.4);
+    color: #818cf8;
+}
+
+.pill-btn.primary:hover {
+    background: rgba(79, 70, 229, 0.3);
+    color: #a5b4fc;
 }
