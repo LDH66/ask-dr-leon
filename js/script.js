@@ -1,10 +1,16 @@
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
+let voicesLoaded = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     setupMobileMicrophone();
     setupUIHandlers();
+    
+    // Preload speech voices for Safari/Chrome
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => { voicesLoaded = true; };
+    }
 });
 
 // Setup mobile speech input using MediaRecorder API for iOS/Android
@@ -122,33 +128,43 @@ function setupUIHandlers() {
     });
 }
 
-// Process query and immediately speak response aloud
+// Process query and deliver exact expert answers in Dr Leon's voice
 function processUserQuery(query) {
-    console.log("Processing query:", query);
-    
-    let answerText = `You asked about ${query}. Vibe coding lets you build apps seamlessly using AI prompts instead of writing every line manually.`;
-    
-    if (query.toLowerCase().includes('vibe coding')) {
-        answerText = "Vibe coding is the revolutionary way to build software where you act as the director, guiding AI to write code while you focus on vision and architecture.";
-    } else if (query.toLowerCase().includes('prompt formula')) {
-        answerText = "The 4 part prompt formula consists of role definition, context, clear constraints, and expected output format.";
-    } else if (query.toLowerCase().includes('apis')) {
-        answerText = "Connecting APIs allows your frontend interface to securely talk to backend services like OpenAI.";
+    const q = query.toLowerCase();
+    let answerText = `Hello! Regarding your question about ${query}, vibe coding empowers you to direct software development using intelligent prompts.`;
+
+    if (q.includes('vibe coding')) {
+        answerText = "Vibe coding is the exciting paradigm shift where you act as the visionary architect. Instead of writing boilerplate syntax line by line, you converse with AI to build, test, and deploy entire applications effortlessly.";
+    } else if (q.includes('prompt formula') || q.includes('formula')) {
+        answerText = "The 4 part prompt formula consists of: First, defining a clear role for your AI. Second, providing rich context. Third, setting strict constraints. And fourth, specifying the exact output format you expect.";
+    } else if (q.includes('api') || q.includes('connecting')) {
+        answerText = "Connecting APIs allows your frontend user interface to securely communicate with powerhouse backend services like OpenAI, handling authentication and data exchange behind the scenes.";
+    } else if (q.includes('tell me more')) {
+        answerText = "Welcome to the future of development! With Ask Dr Leon, you can combine modern serverless architecture, natural voice transcription, and AI prompt engineering to build production-ready applications in record time.";
     }
 
     speakAnswer(answerText);
 }
 
-// Speak text aloud using browser speech synthesis
+// Speak text aloud using natural voice selection
 function speakAnswer(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop any overlapping speech
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
-        console.log("Speaking aloud:", text);
-    } else {
-        console.warn("Speech synthesis not supported in this browser.");
+    if (!('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel(); // Stop any overlapping audio
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Pick a natural-sounding voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => 
+        (v.name.includes('Natural') || v.name.includes('Enhanced') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel')) && v.lang.startsWith('en')
+    ) || voices.find(v => v.lang.startsWith('en'));
+
+    if (preferredVoice) {
+        utterance.voice = preferredVoice;
     }
+
+    utterance.rate = 1.0; // Natural conversational speed
+    utterance.pitch = 1.0;
+    
+    window.speechSynthesis.speak(utterance);
 }
