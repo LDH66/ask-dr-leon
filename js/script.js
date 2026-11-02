@@ -117,13 +117,43 @@ function setupUIHandlers() {
         pill.addEventListener('click', () => {
             const topic = pill.getAttribute('data-topic');
             if (userInput) userInput.value = topic;
-            processUserQuery(topic); // Instantly triggers engine & speech processing
+            processUserQuery(topic);
         });
     });
 }
 
-// Process query silently without rendering text response on screen
-function processUserQuery(query) {
-    console.log("Sending query to engine:", query);
-    // Hook up your backend engine or voice synthesis trigger here
+// Send query to backend AI engine and trigger browser speech synthesis
+async function processUserQuery(query) {
+    try {
+        console.log("Sending query to AI engine:", query);
+        
+        // Call your backend AI function (or handle response)
+        const response = await fetch('/.netlify/functions/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: query })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            speakAnswer(data.reply);
+        } else {
+            // Fallback: If chat function isn't built yet, use browser speech directly
+            speakAnswer(`Dr Leon is answering your question about: ${query}`);
+        }
+    } catch (error) {
+        console.error("Engine processing error:", error);
+        speakAnswer("I received your question, but encountered an error connecting to the engine.");
+    }
+}
+
+// Speak the answer aloud using browser speech synthesis
+function speakAnswer(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop any ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }
 }
