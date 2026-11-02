@@ -1,7 +1,0 @@
-Title: Vibe Coding for AI & Digital Storytelling
-Author/Origin: Coined by Andrej Karpathy, Co-Founder of OpenAI, in February 2025.
-Definition: A programming style where you describe what you want in natural language, and an AI system generates the code. You act as the Creative Director; AI is your Junior Developer.
-Core Technologies: HTML (structure), CSS (styling), JavaScript (interactivity), JSON (lightweight data), SQL (relational databases).
-4-Part Prompt Formula: 1. Context (sets the stage), 2. Goal (primary objective), 3. Constraints (tech stack, design, responsiveness), 4. Output Format (single file or modular snippets).
-APIs: Application Programming Interfaces let software talk to apps. Used to fetch live third-party data like weather, news, or government records via API keys.
-Deployment: Hosted instantly via platforms like Netlify by dragging and dropping project folders containing an index.html file.
