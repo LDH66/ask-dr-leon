@@ -29,7 +29,7 @@ ${kbContent}`;
 
 exports.handler = async function (event) {
   try {
-    const { prompt, isFollowUp } = JSON.parse(event.body || "{}");
+    const { prompt, isFollowUp, useElevenLabs } = JSON.parse(event.body || "{}");
     
     if (!prompt) {
       return {
@@ -40,7 +40,7 @@ exports.handler = async function (event) {
 
     // Configure instructions for natural transitions and gist extraction on follow-ups
     const systemInstruction = isFollowUp
-      ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request regarding: "${prompt}". Your response MUST begin with a natural conversational opener (such as "OK, here's more on...", "Let's dive deeper into...", "Certainly, let's expand on...", or "Here are some further insights into...") followed naturally by the core gist or keyword meaning of the topic—DO NOT repeat the user's question verbatim or use "sure I can tell you more about". Follow this immediately with fresh, advanced insights and technical context that go significantly beyond the initial summary. Spoken length should be around 80-90 words.`
+      ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request regarding: "${prompt}". Your response MUST begin with a natural conversational opener (such as "OK, here's more on...", "Let me expand on...", "Certainly, let's dive deeper into...", or "Here are some further details on...") followed naturally by the core gist or keyword meaning of the topic—DO NOT repeat the user's question verbatim or use "sure I can tell you more about". Follow this immediately with fresh, advanced insights and technical context that go significantly beyond the initial summary. Spoken length should be around 80-90 words so it takes roughly 30 seconds to speak.`
       : `${DR_LEON_BASE_PROMPT}\n\nInstruction: Answer clearly and engagingly. Your spoken answer MUST be around 40-45 words so it takes roughly 15 seconds to speak.`;
 
     const maxTokens = isFollowUp ? 180 : 90;
@@ -58,7 +58,18 @@ exports.handler = async function (event) {
 
     const drLeonReply = completion.choices[0].message.content;
 
-    // Step 2: Convert to ElevenLabs Audio using turbo model for optimized speed
+    // Step 2: If Generic Voice mode is selected, skip ElevenLabs API completely (0 credits used)
+    if (!useElevenLabs) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          text: drLeonReply, 
+          audio: null 
+        }),
+      };
+    }
+
+    // Step 3: Convert to ElevenLabs Audio if explicitly requested
     const ttsResponse = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,
       {
@@ -83,7 +94,6 @@ exports.handler = async function (event) {
       };
     }
 
-    // Step 3: Return Base64 encoded audio
     const arrayBuffer = await ttsResponse.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString("base64");
 
