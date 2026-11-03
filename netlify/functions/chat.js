@@ -6,9 +6,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
 
-// Guaranteed high-fidelity Google DeepMind WaveNet voice (British Male Academic)
-const GOOGLE_VOICE_NAME = "en-GB-Wavenet-B"; 
-
 let kbContent = "";
 try {
   const kbPath = path.join(__dirname, "../../knowledgebase.txt");
@@ -64,7 +61,7 @@ exports.handler = async function (event) {
 
     // 2. Synthesize Audio
     if (useElevenLabs) {
-      // ElevenLabs Custom Voice Mode
+      // ElevenLabs Custom Voice Mode (Leon Clone)
       const ttsResponse = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,
         {
@@ -86,36 +83,16 @@ exports.handler = async function (event) {
         base64Audio = Buffer.from(arrayBuffer).toString("base64");
       }
     } else {
-      // Google Cloud TTS - Formatted with SSML natural cadence and HD Audio Profile
-      const ssmlFormattedText = `<speak><prosody rate="96%">${drLeonReply.replace(/\./g, '.<break time="250ms"/>')}</prosody></speak>`;
+      // OpenAI Neural Voice Mode (Generic Mode - tts-1 with 'echo' voice)
+      const mp3Response = await openai.audio.speech.create({
+        model: "tts-1",
+        voice: "echo", // Clean, clear male voice ideal for generic mode
+        input: drLeonReply,
+        speed: 0.95
+      });
 
-      const googleResponse = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: { ssml: ssmlFormattedText },
-            voice: {
-              languageCode: "en-GB",
-              name: GOOGLE_VOICE_NAME,
-              ssmlGender: "MALE"
-            },
-            audioConfig: {
-              audioEncoding: "MP3",
-              effectsProfileId: ["headphone-class-device"] // Enhances audio depth/richness
-            }
-          })
-        }
-      );
-
-      if (googleResponse.ok) {
-        const googleData = await googleResponse.json();
-        base64Audio = googleData.audioContent; 
-      } else {
-        const errText = await googleResponse.text();
-        console.error("Google TTS Error:", errText);
-      }
+      const buffer = Buffer.from(await mp3Response.arrayBuffer());
+      base64Audio = buffer.toString("base64");
     }
 
     return {
