@@ -31,10 +31,9 @@ exports.handler = async function (event) {
       };
     }
 
-    // Standard answer = ~40-45 words (15 seconds spoken)
-    // Follow-up 'Tell me more' answer = ~80-90 words (30 seconds spoken)
+    // Configure instructions based on whether it's a standard query or a "Tell me more" follow-up
     const systemInstruction = isFollowUp
-      ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: Provide an extended, deeper elaboration on the topic. Your spoken answer MUST be around 80-90 words so it takes exactly 30 seconds to speak.`
+      ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request about "${prompt}". Your response MUST begin with the exact phrase "Sure, I can tell you more about ${prompt}." Follow this immediately with fresh, advanced insights, technical context, or deeper explanations that go significantly beyond a basic summary without repeating previous phrasing. Spoken length should be around 80-90 words.`
       : `${DR_LEON_BASE_PROMPT}\n\nInstruction: Answer clearly and engagingly. Your spoken answer MUST be around 40-45 words so it takes roughly 15 seconds to speak.`;
 
     const maxTokens = isFollowUp ? 180 : 90;
