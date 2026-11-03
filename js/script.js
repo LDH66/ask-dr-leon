@@ -9,7 +9,30 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNetlifyMicrophone();
     setupUIHandlers();
     setupVoiceToggle();
+    primeSpeechForIOS();
 });
+
+// Unlocks iOS Safari Speech Engine on first tap anywhere on the page
+function primeSpeechForIOS() {
+    if (!('speechSynthesis' in window)) return;
+    
+    const unlockSpeech = () => {
+        // Speak a silent empty string directly inside the user gesture chain
+        const silentUtterance = new SpeechSynthesisUtterance(' ');
+        silentUtterance.volume = 0.01; // virtually silent
+        window.speechSynthesis.speak(silentUtterance);
+        
+        // Warm up voices on iOS
+        window.speechSynthesis.getVoices();
+
+        // Remove listener after first user interaction
+        document.removeEventListener('touchstart', unlockSpeech);
+        document.removeEventListener('click', unlockSpeech);
+    };
+
+    document.addEventListener('touchstart', unlockSpeech, { once: true });
+    document.addEventListener('click', unlockSpeech, { once: true });
+}
 
 // Setup Voice Engine Toggle Button (Generic vs Leon)
 function setupVoiceToggle() {
@@ -44,10 +67,10 @@ function playElevenLabsAudio(base64Audio) {
     });
 }
 
-// Global reference array to prevent browser garbage collection bugs on Web Speech API
+// Global reference array to prevent iOS WebKit garbage collection
 window.utterances = window.utterances || [];
 
-// Browser Web Speech API fallback (Fixed against multi-turn freezing)
+// Browser Web Speech API fallback (Fully compatible with iOS Safari)
 function speakBritishAnswer(text) {
     if (!('speechSynthesis' in window)) return;
     
@@ -55,37 +78,38 @@ function speakBritishAnswer(text) {
         window.currentAudio.pause();
     }
     
-    // Clear queue and cancel previous speech securely
+    // Clear previous speech queue
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
 
     const voices = window.speechSynthesis.getVoices();
+    
+    // Preference order for iOS/macOS Daniel or Arthur/Oliver British voices
     const britishVoice = voices.find(v => 
         v.lang === 'en-GB' && (
             v.name.includes('Daniel') || 
+            v.name.includes('Arthur') || 
             v.name.includes('Oliver') || 
             v.name.includes('George') ||
             v.name.toLowerCase().includes('male')
         )
-    ) || voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
+    ) || voices.find(v => v.lang === 'en-GB' || v.lang === 'en_GB') || voices.find(v => v.lang.startsWith('en'));
 
     if (britishVoice) utterance.voice = britishVoice;
     
     utterance.rate = 0.95; 
     utterance.pitch = 0.90; 
 
-    // Store in global array to prevent garbage collection stopping subsequent turns
+    // Retain instance globally so iOS WebKit doesn't garbage collect it mid-speech
     window.utterances.push(utterance);
     
-    // Small timeout buffer ensures queue is fully free before launching next utterance
-    setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
-    }, 50);
+    // Direct call without setTimeout to prevent iOS gesture expiration
+    window.speechSynthesis.speak(utterance);
 }
 
-// Ensure voices are loaded for Web Speech API
+// Ensure voices are loaded asynchronously for iOS / Chrome
 if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.getVoices();
@@ -195,6 +219,10 @@ function setupUIHandlers() {
         submitBtn.addEventListener('click', () => {
             const query = userInput.value.trim();
             if (query) {
+                // Instantly prime speech queue on user gesture
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+                }
                 hasAskedFirstQuestion = true;
                 processUserQuery(query, false);
             }
@@ -205,6 +233,9 @@ function setupUIHandlers() {
                 const query = userInput.value.trim();
                 if (query) {
                     userInput.blur();
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+                    }
                     hasAskedFirstQuestion = true;
                     processUserQuery(query, false);
                 }
@@ -228,6 +259,11 @@ function bindTopicPills() {
 
     topicPills.forEach(pill => {
         pill.addEventListener('click', () => {
+            // Instantly prime speech engine directly on tap gesture
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+            }
+
             const topic = pill.getAttribute('data-topic');
             
             if (topic === "Tell me more") {
