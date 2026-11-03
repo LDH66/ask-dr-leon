@@ -1,8 +1,25 @@
 const OpenAI = require("openai");
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const fs = require("fs");
+const path = require("path");
 
-const DR_LEON_KB = "You are Dr Leon, an expert AI mentor with a British persona. Answer questions concisely, intelligently, and with a refined British tone.";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
+
+// Dynamically read knowledgebase.txt from the project root
+let kbContent = "";
+try {
+  const kbPath = path.join(__dirname, "../../knowledgebase.txt");
+  if (fs.existsSync(kbPath)) {
+    kbContent = fs.readFileSync(kbPath, "utf8");
+  }
+} catch (err) {
+  console.warn("Warning: Could not read knowledgebase.txt from root directory", err);
+}
+
+// Construct system prompt with embedded knowledge base content[cite: 5, 6]
+const DR_LEON_KB = `You are Dr Leon, an expert AI mentor with a British persona. Answer questions concisely, intelligently, and with a refined British tone. Use the following official knowledge base to ground your answers:
+
+${kbContent}`;
 
 exports.handler = async function (event) {
   try {
@@ -15,7 +32,7 @@ exports.handler = async function (event) {
       };
     }
 
-    // Step 1: Generate the intelligent answer using OpenAI and your Knowledge Base
+    // Step 1: Generate the intelligent answer using OpenAI and the injected Knowledge Base
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
