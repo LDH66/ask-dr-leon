@@ -17,7 +17,9 @@
                 <span class="status-dot"></span>
                 <h1>Ask Dr Leon</h1>
             </div>
-            <div class="subtitle">Vibe Coding Explained</div>
+            <div class="subtitle" style="background: none !important; border: none !important; padding: 0 !important; box-shadow: none !important; pointer-events: none; font-weight: 500;">
+                Vibe Coding Explained
+            </div>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <!-- Voice Engine Toggle Button -->
                 <button id="voiceToggleBtn" class="voice-toggle-btn" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Voice: Generic</button>
@@ -44,7 +46,7 @@
             <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
         </section>
 
-        <!-- PANE 3: Avatar Pane (Placed directly below Input Pane) -->
+        <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
                 <img src="images/Default_avatar.jpg" alt="Dr Leon Avatar" id="avatarImage">
@@ -52,7 +54,7 @@
             </div>
         </section>
 
-        <!-- PANE 4: Graphics Pane (Updated with your correct buttons) -->
+        <!-- PANE 4: Graphics Pane -->
         <section class="pane graphics-pane" id="graphicsPane">
             <div class="topic-box-wrapper">
                 <div class="topic-menu-label">Related Topics & Studio Options</div>
@@ -69,7 +71,7 @@
 
     </div>
 
-    <!-- Cache buster added so it loads your script properly -->
+    <!-- Script with cache-buster -->
     <script src="js/script.js?v=2.1"></script>
 </body>
 </html>
