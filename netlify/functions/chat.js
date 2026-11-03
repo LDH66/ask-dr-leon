@@ -6,9 +6,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
 
-// Google Cloud API Key and Voice settings (British Male Neural Voice - mature/academic tone)
-const GOOGLE_TTS_API_KEY = "AIzaSyAn11fEFnxZn6cYlsr2iy0QFn03h1lo1cU";
-const GOOGLE_VOICE_NAME = "en-GB-Neural2-D"; // Deep, mature British male neural voice
+// Use Google's Studio tier for a natural, deep British male academic tone
+const GOOGLE_VOICE_NAME = "en-GB-Studio-B"; 
 
 let kbContent = "";
 try {
@@ -87,9 +86,9 @@ exports.handler = async function (event) {
         base64Audio = Buffer.from(arrayBuffer).toString("base64");
       }
     } else {
-      // Google Cloud TTS Generic Mode (Universal Cross-Platform including iPhone)
+      // Google Cloud TTS Generic Mode (Using Studio-B for a richer, human-like voice)
       const googleResponse = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,9 +100,8 @@ exports.handler = async function (event) {
               ssmlGender: "MALE"
             },
             audioConfig: {
-              audioEncoding: "MP3",
-              speakingRate: 0.93, // Slightly slower, more deliberate academic cadence
-              pitch: -1.5        // Lower pitch for a more mature male sound
+              audioEncoding: "MP3"
+              // Removed forced speakingRate and pitch overrides to prevent robotic distortion
             }
           })
         }
