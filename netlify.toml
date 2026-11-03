@@ -3,6 +3,4 @@
   functions = "netlify/functions"
 
 [functions]
-  # Increase serverless timeout from default 10s to 26s to prevent 
-  # OpenAI + ElevenLabs sequential chain from timing out.
   timeout = 26
