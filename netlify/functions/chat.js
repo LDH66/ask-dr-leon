@@ -27,16 +27,12 @@ Official Knowledge Base for Vibe Coding:
 ${kbContent}`;
 
 exports.handler = async function (event) {
-  // Ensure this is a POST request
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
   try {
-    const bodyData = JSON.parse(event.body || "{}");
-    const prompt = bodyData.prompt;
-    const isFollowUp = bodyData.isFollowUp || false;
-    const useElevenLabs = bodyData.useElevenLabs || false;
+    const { prompt, isFollowUp, useElevenLabs } = JSON.parse(event.body || "{}");
     
     if (!prompt) {
       return {
@@ -49,7 +45,7 @@ exports.handler = async function (event) {
       ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request regarding: "${prompt}". Your response MUST begin with a natural conversational opener followed naturally by the core gist of the topic—DO NOT repeat the user's question verbatim. Spoken length should be around 80-90 words so it takes roughly 30 seconds to speak.`
       : `${DR_LEON_BASE_PROMPT}\n\nInstruction: Answer clearly and engagingly. Your spoken answer MUST be around 40-45 words so it takes roughly 15 seconds to speak.`;
 
-    // 1. OpenAI Text Generation
+    // 1. Generate text response using GPT-4o-mini
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -63,7 +59,7 @@ exports.handler = async function (event) {
     const drLeonReply = completion.choices[0].message.content;
     let base64Audio = null;
 
-    // 2. Synthesize Audio via External API
+    // 2. Synthesize audio
     if (useElevenLabs) {
       const ttsResponse = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,
@@ -81,24 +77,33 @@ exports.handler = async function (event) {
         }
       );
 
-      if (!ttsResponse.ok) {
-        throw new Error(`ElevenLabs API error: ${await ttsResponse.text()}`);
+      if (ttsResponse.ok) {
+        const arrayBuffer = await ttsResponse.arrayBuffer();
+        base64Audio = Buffer.from(arrayBuffer).toString("base64");
       }
-
-      const arrayBuffer = await ttsResponse.arrayBuffer();
-      base64Audio = Buffer.from(arrayBuffer).toString("base64");
     } else {
-      // OpenAI TTS Endpoint (`tts-1` with 'echo' voice)
-      const mp3Response = await openai.audio.speech.create({
-        model: "tts-1",
-        voice: "echo",
-        response_format: "mp3",
-        input: drLeonReply,
-        speed: 0.95
+      // Direct REST call to OpenAI Audio TTS endpoint (Guaranteed MP3 stream)
+      const openAiTtsResponse = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "tts-1",
+          voice: "echo",
+          input: drLeonReply,
+          response_format: "mp3"
+        })
       });
 
-      const buffer = Buffer.from(await mp3Response.arrayBuffer());
-      base64Audio = buffer.toString("base64");
+      if (openAiTtsResponse.ok) {
+        const audioBuffer = await openAiTtsResponse.arrayBuffer();
+        base64Audio = Buffer.from(audioBuffer).toString("base64");
+      } else {
+        const errText = await openAiTtsResponse.text();
+        console.error("OpenAI TTS REST Error:", errText);
+      }
     }
 
     return {
@@ -111,11 +116,11 @@ exports.handler = async function (event) {
     };
 
   } catch (err) {
-    console.error("Netlify Function Error:", err);
+    console.error("Netlify Function Crash:", err);
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: err.message || "Internal Server Error" }),
+      body: JSON.stringify({ error: err.message }),
     };
   }
 };
