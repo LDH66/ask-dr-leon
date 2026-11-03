@@ -4,23 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ask Dr Leon - Vibe Coding Explained</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="app-container">
         
-        <!-- PANE 1: Title Pane -->
+        <!-- PANE 1: Title Pane (Includes Voice Mode Toggle) -->
         <header class="pane title-pane">
             <div class="logo-area">
                 <span class="status-dot"></span>
                 <h1>Ask Dr Leon</h1>
             </div>
-            <div class="subtitle">AI & Media Studio</div>
-            <button class="menu-btn" aria-label="Menu">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-            </button>
+            <div class="header-actions" style="display: flex; align-items: center; gap: 10px;">
+                <button id="voiceToggleBtn" class="voice-toggle-btn" title="Click to toggle voice engine">
+                    Voice: Generic
+                </button>
+                <button class="menu-btn" aria-label="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+            </div>
         </header>
 
         <!-- PANE 2: Input Pane -->
@@ -40,7 +44,7 @@
             <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
         </section>
 
-        <!-- PANE 3: Avatar Pane (Placed directly below Input Pane) -->
+        <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
                 <img src="images/Default_avatar.jpg" alt="Dr Leon Avatar" id="avatarImage">
@@ -48,12 +52,13 @@
             </div>
         </section>
 
-        <!-- PANE 4: Graphics Pane (Bordered Box with 5+ Coding, Games & Media Topics) -->
+        <!-- PANE 4: Graphics Pane -->
         <section class="pane graphics-pane" id="graphicsPane">
             <div class="topic-box-wrapper">
                 <div class="topic-menu-label">Related Topics & Studio Options</div>
                 <div class="topic-pills" id="topicPills">
-                    <button class="pill-btn primary" data-topic="What is HTML?">What is HTML?</button>
+                    <button class="pill-btn primary" data-topic="Tell me more">Tell me more</button>
+                    <button class="pill-btn" data-topic="What is HTML?">What is HTML?</button>
                     <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
                     <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
                     <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
@@ -65,6 +70,6 @@
 
     </div>
 
-    <script src="js/script.js"></script>
+    <script src="js/script.js?v=4"></script>
 </body>
 </html>
