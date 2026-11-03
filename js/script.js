@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUIHandlers();
 });
 
-// Play Base64 MP3 audio returned from backend (ElevenLabs voice clone stream)
+// Play Base64 MP3 audio returned from backend
 function playElevenLabsAudio(base64Audio) {
     if (window.currentAudio) {
         window.currentAudio.pause();
@@ -79,7 +79,7 @@ function setupNetlifyMicrophone() {
                     if (transcribedText) {
                         const userInput = document.getElementById('userInput');
                         if (userInput) userInput.value = transcribedText;
-                        processUserQuery(transcribedText);
+                        processUserQuery(transcribedText, false);
                     }
                     
                     if (listeningIndicator) listeningIndicator.style.display = 'none';
@@ -139,7 +139,7 @@ function setupUIHandlers() {
     if (submitBtn && userInput) {
         submitBtn.addEventListener('click', () => {
             const query = userInput.value.trim();
-            if (query) processUserQuery(query);
+            if (query) processUserQuery(query, false);
         });
 
         userInput.addEventListener('keypress', (e) => {
@@ -147,7 +147,7 @@ function setupUIHandlers() {
                 const query = userInput.value.trim();
                 if (query) {
                     userInput.blur();
-                    processUserQuery(query);
+                    processUserQuery(query, false);
                 }
             }
         });
@@ -170,15 +170,27 @@ function bindTopicPills() {
     topicPills.forEach(pill => {
         pill.addEventListener('click', () => {
             const topic = pill.getAttribute('data-topic');
-            if (userInput) userInput.value = topic;
-            processUserQuery(topic);
+            if (topic === "Tell me more") {
+                // Trigger deeper follow-up on the last asked query
+                if (lastAskedQuery) {
+                    processUserQuery(lastAskedQuery, true);
+                } else {
+                    processUserQuery("Vibe Coding", true);
+                }
+            } else {
+                if (userInput) userInput.value = topic;
+                processUserQuery(topic, false);
+            }
         });
     });
 }
 
 // Send User Query to Backend Serverless Function (`chat.js`)
-async function processUserQuery(query) {
-    lastAskedQuery = query;
+async function processUserQuery(query, isFollowUp = false) {
+    if (!isFollowUp) {
+        lastAskedQuery = query;
+    }
+    
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
@@ -186,13 +198,15 @@ async function processUserQuery(query) {
         const response = await fetch('/.netlify/functions/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: query })
+            body: JSON.stringify({ 
+                prompt: query, 
+                isFollowUp: isFollowUp 
+            })
         });
 
         if (response.ok) {
             const data = await response.json();
             if (data.audio) {
-                // Play audio streamed from ElevenLabs voice clone
                 playElevenLabsAudio(data.audio);
             } else {
                 speakBritishAnswer(data.text || data.reply);
@@ -206,12 +220,12 @@ async function processUserQuery(query) {
     speakBritishAnswer(`Regarding ${query}, mastering this core concept helps you build cleaner systems and direct AI tools with precision.`);
 }
 
-// Refresh dynamic suggestion pills
+// Refresh dynamic suggestion pills (Removed '(1 min)' from button text)
 function updateRelatedTopics(queryKey) {
     const topicPillsContainer = document.getElementById('topicPills');
     if (!topicPillsContainer) return;
 
-    let newPillsHTML = `<button class="pill-btn primary" data-topic="Tell me more">Tell me more (1 min)</button>`;
+    let newPillsHTML = `<button class="pill-btn primary" data-topic="Tell me more">Tell me more</button>`;
 
     if (queryKey.includes('vibe coding')) {
         newPillsHTML += `
