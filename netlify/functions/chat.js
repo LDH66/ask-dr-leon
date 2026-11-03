@@ -31,7 +31,6 @@ exports.handler = async function (event) {
       };
     }
 
-    // Adjust spoken duration target based on standard ~150 words per minute speech rate
     // Standard answer = ~40-45 words (15 seconds spoken)
     // Follow-up 'Tell me more' answer = ~80-90 words (30 seconds spoken)
     const systemInstruction = isFollowUp
@@ -45,7 +44,7 @@ exports.handler = async function (event) {
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemInstruction },
-        { role: "user", content: isFollowUp ? `Tell me more about: ${prompt}` : prompt }
+        { role: "user", content: prompt }
       ],
       max_tokens: maxTokens,
       temperature: 0.7,
@@ -65,7 +64,7 @@ exports.handler = async function (event) {
         },
         body: JSON.stringify({
           text: drLeonReply,
-          model_id: "eleven_turbo_v2_5", // Latency optimized model
+          model_id: "eleven_turbo_v2_5",
         }),
       }
     );
