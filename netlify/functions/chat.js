@@ -6,8 +6,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
 
-// Use Google's Studio tier for a natural, deep British male academic tone
-const GOOGLE_VOICE_NAME = "en-GB-Studio-B"; 
+// Guaranteed high-fidelity Google DeepMind WaveNet voice (British Male Academic)
+const GOOGLE_VOICE_NAME = "en-GB-Wavenet-B"; 
 
 let kbContent = "";
 try {
@@ -86,22 +86,24 @@ exports.handler = async function (event) {
         base64Audio = Buffer.from(arrayBuffer).toString("base64");
       }
     } else {
-      // Google Cloud TTS Generic Mode (Using Studio-B for a richer, human-like voice)
+      // Google Cloud TTS - Formatted with SSML natural cadence and HD Audio Profile
+      const ssmlFormattedText = `<speak><prosody rate="96%">${drLeonReply.replace(/\./g, '.<break time="250ms"/>')}</prosody></speak>`;
+
       const googleResponse = await fetch(
         `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            input: { text: drLeonReply },
+            input: { ssml: ssmlFormattedText },
             voice: {
               languageCode: "en-GB",
               name: GOOGLE_VOICE_NAME,
               ssmlGender: "MALE"
             },
             audioConfig: {
-              audioEncoding: "MP3"
-              // Removed forced speakingRate and pitch overrides to prevent robotic distortion
+              audioEncoding: "MP3",
+              effectsProfileId: ["headphone-class-device"] // Enhances audio depth/richness
             }
           })
         }
