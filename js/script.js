@@ -254,8 +254,8 @@ function updateRelatedTopics(queryKey) {
         newPillsHTML += `
             <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
             <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
-            <button class="pill-btn" data-topic="Game Dev Physics">Game Dev Physics</button>
-            <button class="pill-btn" data-topic="Media & Audio Sync">Media & Audio Sync</button>
+            <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
+            <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
             <button class="pill-btn" data-topic="What is HTML?">What is HTML?</button>
         `;
     } else {
@@ -263,8 +263,8 @@ function updateRelatedTopics(queryKey) {
             <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
             <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
             <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
-            <button class="pill-btn" data-topic="Game Dev Physics">Game Dev Physics</button>
-            <button class="pill-btn" data-topic="Media & Audio Sync">Media & Audio Sync</button>
+            <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
+            <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
         `;
     }
 
