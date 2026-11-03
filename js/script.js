@@ -3,38 +3,18 @@ let audioChunks = [];
 let isRecording = false;
 let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
-let currentVoiceEngine = "generic"; // Default to "generic" (Web Speech API)
+let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic")
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("--------------------------------------------------");
+    console.log("[DR. LEON] OpenAI Audio Pipeline Active v2.0 🚀");
+    console.log("--------------------------------------------------");
     setupNetlifyMicrophone();
     setupUIHandlers();
     setupVoiceToggle();
-    primeSpeechForIOS();
 });
 
-// Unlocks iOS Safari Speech Engine on first tap anywhere on the page
-function primeSpeechForIOS() {
-    if (!('speechSynthesis' in window)) return;
-    
-    const unlockSpeech = () => {
-        // Speak a silent empty string directly inside the user gesture chain
-        const silentUtterance = new SpeechSynthesisUtterance(' ');
-        silentUtterance.volume = 0.01; // virtually silent
-        window.speechSynthesis.speak(silentUtterance);
-        
-        // Warm up voices on iOS
-        window.speechSynthesis.getVoices();
-
-        // Remove listener after first user interaction
-        document.removeEventListener('touchstart', unlockSpeech);
-        document.removeEventListener('click', unlockSpeech);
-    };
-
-    document.addEventListener('touchstart', unlockSpeech, { once: true });
-    document.addEventListener('click', unlockSpeech, { once: true });
-}
-
-// Setup Voice Engine Toggle Button (Generic vs Leon)
+// Setup Voice Engine Toggle Button (Generic [OpenAI] vs Leon [ElevenLabs])
 function setupVoiceToggle() {
     const voiceToggleBtn = document.getElementById('voiceToggleBtn');
     if (!voiceToggleBtn) return;
@@ -44,79 +24,38 @@ function setupVoiceToggle() {
             currentVoiceEngine = "elevenlabs";
             voiceToggleBtn.textContent = "Voice: Leon";
             voiceToggleBtn.classList.add('leon-active');
+            console.log("[DR. LEON] Switched engine to: ElevenLabs (Leon)");
         } else {
             currentVoiceEngine = "generic";
             voiceToggleBtn.textContent = "Voice: Generic";
             voiceToggleBtn.classList.remove('leon-active');
+            console.log("[DR. LEON] Switched engine to: OpenAI TTS (Generic)");
         }
     });
 }
 
-// Play Base64 MP3 audio returned from backend (ElevenLabs)
-function playElevenLabsAudio(base64Audio) {
+// Universal MP3 Audio Stream Player (Plays OpenAI / ElevenLabs Base64 MP3 stream)
+function playAudioStream(base64Audio) {
+    if (!base64Audio) {
+        console.error("[DR. LEON ERROR] No base64 audio returned from backend!");
+        return;
+    }
+
     if (window.currentAudio) {
         window.currentAudio.pause();
+        window.currentAudio = null;
     }
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-    }
+
+    console.log("[DR. LEON] Playing audio stream, length of base64:", base64Audio.length);
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
     window.currentAudio = new Audio(audioUrl);
+    
     window.currentAudio.play().catch(err => {
-        console.warn("Audio playback interrupted or blocked by browser:", err);
+        console.warn("[DR. LEON WARNING] Audio playback restricted by browser gesture limits:", err);
     });
 }
 
-// Global reference array to prevent iOS WebKit garbage collection
-window.utterances = window.utterances || [];
-
-// Browser Web Speech API fallback (Fully compatible with iOS Safari)
-function speakBritishAnswer(text) {
-    if (!('speechSynthesis' in window)) return;
-    
-    if (window.currentAudio) {
-        window.currentAudio.pause();
-    }
-    
-    // Clear previous speech queue
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-GB';
-
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Preference order for iOS/macOS Daniel or Arthur/Oliver British voices
-    const britishVoice = voices.find(v => 
-        v.lang === 'en-GB' && (
-            v.name.includes('Daniel') || 
-            v.name.includes('Arthur') || 
-            v.name.includes('Oliver') || 
-            v.name.includes('George') ||
-            v.name.toLowerCase().includes('male')
-        )
-    ) || voices.find(v => v.lang === 'en-GB' || v.lang === 'en_GB') || voices.find(v => v.lang.startsWith('en'));
-
-    if (britishVoice) utterance.voice = britishVoice;
-    
-    utterance.rate = 0.95; 
-    utterance.pitch = 0.90; 
-
-    // Retain instance globally so iOS WebKit doesn't garbage collect it mid-speech
-    window.utterances.push(utterance);
-    
-    // Direct call without setTimeout to prevent iOS gesture expiration
-    window.speechSynthesis.speak(utterance);
-}
-
-// Ensure voices are loaded asynchronously for iOS / Chrome
-if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-    };
-}
-
-// Setup Microphone recording
+// Setup Microphone Recording
 function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
@@ -186,7 +125,7 @@ function setupNetlifyMicrophone() {
     });
 }
 
-// Send user voice audio to Netlify Whisper Transcribe Endpoint
+// Transcribe Voice Input via Whisper Endpoint
 async function sendAudioToBackend(audioBlob) {
     try {
         const reader = new FileReader();
@@ -209,7 +148,7 @@ async function sendAudioToBackend(audioBlob) {
     }
 }
 
-// Attach UI Event Listeners
+// UI Setup
 function setupUIHandlers() {
     const submitBtn = document.getElementById('submitBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
@@ -219,10 +158,6 @@ function setupUIHandlers() {
         submitBtn.addEventListener('click', () => {
             const query = userInput.value.trim();
             if (query) {
-                // Instantly prime speech queue on user gesture
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-                }
                 hasAskedFirstQuestion = true;
                 processUserQuery(query, false);
             }
@@ -233,9 +168,6 @@ function setupUIHandlers() {
                 const query = userInput.value.trim();
                 if (query) {
                     userInput.blur();
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-                    }
                     hasAskedFirstQuestion = true;
                     processUserQuery(query, false);
                 }
@@ -246,7 +178,6 @@ function setupUIHandlers() {
     if (stopAudioBtn) {
         stopAudioBtn.addEventListener('click', () => {
             if (window.currentAudio) window.currentAudio.pause();
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         });
     }
 
@@ -259,11 +190,6 @@ function bindTopicPills() {
 
     topicPills.forEach(pill => {
         pill.addEventListener('click', () => {
-            // Instantly prime speech engine directly on tap gesture
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-            }
-
             const topic = pill.getAttribute('data-topic');
             
             if (topic === "Tell me more") {
@@ -281,7 +207,7 @@ function bindTopicPills() {
     });
 }
 
-// Send User Query to Backend Serverless Function (`chat.js`)
+// Process Query and Play Backend Stream
 async function processUserQuery(query, isFollowUp = false) {
     if (!isFollowUp) {
         hasAskedFirstQuestion = true;
@@ -290,6 +216,8 @@ async function processUserQuery(query, isFollowUp = false) {
     
     const q = query.toLowerCase();
     updateRelatedTopics(q);
+
+    console.log("[DR. LEON] Sending query to backend:", query, "| Engine:", currentVoiceEngine);
 
     try {
         const response = await fetch('/.netlify/functions/chat', {
@@ -304,22 +232,18 @@ async function processUserQuery(query, isFollowUp = false) {
 
         if (response.ok) {
             const data = await response.json();
-            
-            if (currentVoiceEngine === "elevenlabs" && data.audio) {
-                playElevenLabsAudio(data.audio);
-            } else {
-                speakBritishAnswer(data.text || data.reply);
-            }
+            console.log("[DR. LEON] Received response text:", data.text);
+            playAudioStream(data.audio);
             return;
+        } else {
+            console.error("[DR. LEON ERROR] Netlify function returned status:", response.status);
         }
     } catch (error) {
-        console.warn("Netlify function error, using browser fallback:", error);
+        console.error("[DR. LEON ERROR] Netlify chat fetch error:", error);
     }
-
-    speakBritishAnswer(`Regarding ${query}, mastering this core concept helps you build cleaner systems and direct AI tools with precision.`);
 }
 
-// Refresh dynamic suggestion pills
+// Dynamic Suggestion Pills
 function updateRelatedTopics(queryKey) {
     const topicPillsContainer = document.getElementById('topicPills');
     if (!topicPillsContainer) return;
