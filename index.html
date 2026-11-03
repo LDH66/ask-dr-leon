@@ -2,38 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ask Dr. Leon</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ask Dr Leon - Vibe Coding Explained</title>
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
     <div class="app-container">
-        <!-- Header / Voice Toggle -->
-        <header class="app-header">
-            <h1>Ask Dr. Leon</h1>
-            <button id="voiceToggleBtn" class="voice-toggle-btn">Voice: Generic</button>
+        
+        <!-- PANE 1: Title Pane -->
+        <header class="pane title-pane">
+            <div class="logo-area">
+                <span class="status-dot"></span>
+                <h1>Ask Dr Leon</h1>
+            </div>
+            <div class="subtitle">AI & Media Studio</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <!-- Voice Engine Toggle Button -->
+                <button id="voiceToggleBtn" class="voice-toggle-btn" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Voice: Generic</button>
+                <button class="menu-btn" aria-label="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+            </div>
         </header>
 
-        <!-- Main Content / Visual Area -->
-        <main class="chat-main">
-            <div id="listeningIndicator" class="listening-indicator" style="display: none;">Listening...</div>
-            <div id="topicPills" class="topic-pills">
-                <!-- Dynamically populated by script.js -->
+        <!-- PANE 2: Input Pane -->
+        <section class="pane input-pane">
+            <div class="input-form-wrapper">
+                <button id="micBtn" class="mic-btn" aria-label="Voice Input" title="Speak your question">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+                <input type="text" id="userInput" placeholder="Ask Dr Leon a question..." autocomplete="off">
+                <button id="stopAudioBtn" class="stop-audio-btn" aria-label="Stop Speaking" title="Stop Dr Leon speaking">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <button id="submitBtn" class="submit-btn" aria-label="Submit">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
             </div>
-        </main>
+            <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
+        </section>
 
-        <!-- Footer / Input Area -->
-        <footer class="chat-footer">
-            <div class="input-wrapper">
-                <input type="text" id="userInput" placeholder="Ask Dr. Leon about vibe coding...">
-                <button id="micBtn" class="control-btn" title="Voice Input" style="display: none;">🎤</button>
-                <button id="submitBtn" class="control-btn" title="Send">➤</button>
-                <button id="stopAudioBtn" class="control-btn" title="Stop Audio">⏹</button>
+        <!-- PANE 3: Avatar Pane (Placed directly below Input Pane) -->
+        <section class="pane avatar-pane">
+            <div class="avatar-wrapper">
+                <img src="images/Default_avatar.jpg" alt="Dr Leon Avatar" id="avatarImage">
+                <div class="avatar-glow"></div>
             </div>
-        </footer>
+        </section>
+
+        <!-- PANE 4: Graphics Pane (Updated with your correct buttons) -->
+        <section class="pane graphics-pane" id="graphicsPane">
+            <div class="topic-box-wrapper">
+                <div class="topic-menu-label">Related Topics & Studio Options</div>
+                <div class="topic-pills" id="topicPills">
+                    <button class="pill-btn primary" data-topic="What is HTML?">What is HTML?</button>
+                    <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
+                    <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
+                    <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
+                    <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
+                    <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
+                </div>
+            </div>
+        </section>
+
     </div>
 
-    <!-- Script with cache-buster -->
-    <script src="js/script.js?v=2.0"></script>
+    <!-- Cache buster added so it loads your script properly -->
+    <script src="js/script.js?v=2.1"></script>
 </body>
 </html>
