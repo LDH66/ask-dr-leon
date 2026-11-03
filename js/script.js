@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNetlifyMicrophone();
     setupUIHandlers();
     setupVoiceToggle();
+    updateRelatedTopics(""); // Forces the correct buttons to render instantly on page load
 });
 
 // Setup Voice Engine Toggle Button (Generic [OpenAI] vs Leon [ElevenLabs])
