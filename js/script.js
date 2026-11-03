@@ -3,16 +3,39 @@ let audioChunks = [];
 let isRecording = false;
 let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
+let currentVoiceEngine = "generic"; // Default to "generic" (Web Speech API)
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNetlifyMicrophone();
     setupUIHandlers();
+    setupVoiceToggle();
 });
 
-// Play Base64 MP3 audio returned from backend
+// Setup Voice Engine Toggle Button (Generic vs Leon)
+function setupVoiceToggle() {
+    const voiceToggleBtn = document.getElementById('voiceToggleBtn');
+    if (!voiceToggleBtn) return;
+
+    voiceToggleBtn.addEventListener('click', () => {
+        if (currentVoiceEngine === "generic") {
+            currentVoiceEngine = "elevenlabs";
+            voiceToggleBtn.textContent = "Voice: Leon";
+            voiceToggleBtn.classList.add('leon-active');
+        } else {
+            currentVoiceEngine = "generic";
+            voiceToggleBtn.textContent = "Voice: Generic";
+            voiceToggleBtn.classList.remove('leon-active');
+        }
+    });
+}
+
+// Play Base64 MP3 audio returned from backend (ElevenLabs)
 function playElevenLabsAudio(base64Audio) {
     if (window.currentAudio) {
         window.currentAudio.pause();
+    }
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
     }
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
     window.currentAudio = new Audio(audioUrl);
@@ -21,25 +44,46 @@ function playElevenLabsAudio(base64Audio) {
     });
 }
 
-// Local Speech Synthesis fallback
+// Browser Web Speech API fallback (Older/Mature British Male Accent)
 function speakBritishAnswer(text) {
     if (!('speechSynthesis' in window)) return;
+    
+    if (window.currentAudio) {
+        window.currentAudio.pause();
+    }
     window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
 
     const voices = window.speechSynthesis.getVoices();
+    
+    // Preference order for mature/older sounding British male voices across OSes
     const britishVoice = voices.find(v => 
-        v.lang === 'en-GB' && (v.name.toLowerCase().includes('male') || v.name.includes('Oliver') || v.name.includes('Daniel'))
+        v.lang === 'en-GB' && (
+            v.name.includes('Daniel') || 
+            v.name.includes('Oliver') || 
+            v.name.includes('George') ||
+            v.name.toLowerCase().includes('male')
+        )
     ) || voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
 
     if (britishVoice) utterance.voice = britishVoice;
-    utterance.rate = 0.98; 
-    utterance.pitch = 0.92; 
+    
+    // Pitch and rate adjusted slightly for a mature, academic cadence
+    utterance.rate = 0.95; 
+    utterance.pitch = 0.90; 
     window.speechSynthesis.speak(utterance);
 }
 
-// Setup Microphone recording for iOS/Mac/Desktop
+// Ensure voices are loaded for Web Speech API
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
+}
+
+// Setup Microphone recording
 function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
@@ -179,14 +223,13 @@ function bindTopicPills() {
             
             if (topic === "Tell me more") {
                 if (!hasAskedFirstQuestion) {
-                    // Default behavior before first question: 15-sec site overview summary
+                    // Site overview summary
                     processUserQuery("What is this site about and what is its core purpose?", false);
                 } else {
-                    // Deep dive (30-sec follow-up) on the last asked query
+                    // Deep dive follow-up on active query
                     processUserQuery(lastAskedQuery, true);
                 }
             } else {
-                // User clicked a specific study topic pill, marking it as their active context
                 hasAskedFirstQuestion = true;
                 if (userInput) userInput.value = topic;
                 processUserQuery(topic, false);
@@ -211,13 +254,15 @@ async function processUserQuery(query, isFollowUp = false) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 prompt: query, 
-                isFollowUp: isFollowUp 
+                isFollowUp: isFollowUp,
+                useElevenLabs: (currentVoiceEngine === "elevenlabs")
             })
         });
 
         if (response.ok) {
             const data = await response.json();
-            if (data.audio) {
+            
+            if (currentVoiceEngine === "elevenlabs" && data.audio) {
                 playElevenLabsAudio(data.audio);
             } else {
                 speakBritishAnswer(data.text || data.reply);
@@ -225,13 +270,13 @@ async function processUserQuery(query, isFollowUp = false) {
             return;
         }
     } catch (error) {
-        console.warn("Netlify function error, using fallback:", error);
+        console.warn("Netlify function error, using browser fallback:", error);
     }
 
     speakBritishAnswer(`Regarding ${query}, mastering this core concept helps you build cleaner systems and direct AI tools with precision.`);
 }
 
-// Refresh dynamic suggestion pills (guaranteed no '(1 min)')
+// Refresh dynamic suggestion pills
 function updateRelatedTopics(queryKey) {
     const topicPillsContainer = document.getElementById('topicPills');
     if (!topicPillsContainer) return;
