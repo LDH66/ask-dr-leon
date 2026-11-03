@@ -3,9 +3,13 @@ const fs = require("fs");
 const path = require("path");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
 
-// Read knowledgebase.txt from root directory dynamically
+// Google Cloud API Key and Voice settings (British Male Neural Voice - mature/academic tone)
+const GOOGLE_TTS_API_KEY = "AIzaSyAn11fEFnxZn6cYlsr2iy0QFn03h1lo1cU";
+const GOOGLE_VOICE_NAME = "en-GB-Neural2-D"; // Deep, mature British male neural voice
+
 let kbContent = "";
 try {
   const kbPath = path.join(__dirname, "../../knowledgebase.txt");
@@ -38,14 +42,13 @@ exports.handler = async function (event) {
       };
     }
 
-    // Configure instructions for natural transitions and gist extraction on follow-ups
     const systemInstruction = isFollowUp
-      ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request regarding: "${prompt}". Your response MUST begin with a natural conversational opener (such as "OK, here's more on...", "Let me expand on...", "Certainly, let's dive deeper into...", or "Here are some further details on...") followed naturally by the core gist or keyword meaning of the topic—DO NOT repeat the user's question verbatim or use "sure I can tell you more about". Follow this immediately with fresh, advanced insights and technical context that go significantly beyond the initial summary. Spoken length should be around 80-90 words so it takes roughly 30 seconds to speak.`
+      ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request regarding: "${prompt}". Your response MUST begin with a natural conversational opener followed naturally by the core gist of the topic—DO NOT repeat the user's question verbatim. Spoken length should be around 80-90 words so it takes roughly 30 seconds to speak.`
       : `${DR_LEON_BASE_PROMPT}\n\nInstruction: Answer clearly and engagingly. Your spoken answer MUST be around 40-45 words so it takes roughly 15 seconds to speak.`;
 
     const maxTokens = isFollowUp ? 180 : 90;
 
-    // Step 1: Generate response from OpenAI
+    // 1. OpenAI Text Generation
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -58,44 +61,62 @@ exports.handler = async function (event) {
 
     const drLeonReply = completion.choices[0].message.content;
 
-    // Step 2: If Generic Voice mode is selected, skip ElevenLabs API completely (0 credits used)
-    if (!useElevenLabs) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ 
-          text: drLeonReply, 
-          audio: null 
-        }),
-      };
-    }
+    let base64Audio = null;
 
-    // Step 3: Convert to ElevenLabs Audio if explicitly requested
-    const ttsResponse = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,
-      {
-        method: "POST",
-        headers: {
-          "Accept": "audio/mpeg",
-          "Content-Type": "application/json",
-          "xi-api-key": process.env.ELEVENLABS_API_KEY,
-        },
-        body: JSON.stringify({
-          text: drLeonReply,
-          model_id: "eleven_turbo_v2_5",
-        }),
+    // 2. Synthesize Audio
+    if (useElevenLabs) {
+      // ElevenLabs Custom Voice Mode
+      const ttsResponse = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,
+        {
+          method: "POST",
+          headers: {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": process.env.ELEVENLABS_API_KEY,
+          },
+          body: JSON.stringify({
+            text: drLeonReply,
+            model_id: "eleven_turbo_v2_5",
+          }),
+        }
+      );
+
+      if (ttsResponse.ok) {
+        const arrayBuffer = await ttsResponse.arrayBuffer();
+        base64Audio = Buffer.from(arrayBuffer).toString("base64");
       }
-    );
+    } else {
+      // Google Cloud TTS Generic Mode (Universal Cross-Platform including iPhone)
+      const googleResponse = await fetch(
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input: { text: drLeonReply },
+            voice: {
+              languageCode: "en-GB",
+              name: GOOGLE_VOICE_NAME,
+              ssmlGender: "MALE"
+            },
+            audioConfig: {
+              audioEncoding: "MP3",
+              speakingRate: 0.93, // Slightly slower, more deliberate academic cadence
+              pitch: -1.5        // Lower pitch for a more mature male sound
+            }
+          })
+        }
+      );
 
-    if (!ttsResponse.ok) {
-      const errorText = await ttsResponse.text();
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: `ElevenLabs error: ${errorText}` }),
-      };
+      if (googleResponse.ok) {
+        const googleData = await googleResponse.json();
+        base64Audio = googleData.audioContent; 
+      } else {
+        const errText = await googleResponse.text();
+        console.error("Google TTS Error:", errText);
+      }
     }
-
-    const arrayBuffer = await ttsResponse.arrayBuffer();
-    const base64Audio = Buffer.from(arrayBuffer).toString("base64");
 
     return {
       statusCode: 200,
