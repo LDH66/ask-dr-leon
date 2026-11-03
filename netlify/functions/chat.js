@@ -3,7 +3,6 @@ const fs = require("fs");
 const path = require("path");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
 
 let kbContent = "";
@@ -28,8 +27,16 @@ Official Knowledge Base for Vibe Coding:
 ${kbContent}`;
 
 exports.handler = async function (event) {
+  // Ensure this is a POST request
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
+
   try {
-    const { prompt, isFollowUp, useElevenLabs } = JSON.parse(event.body || "{}");
+    const bodyData = JSON.parse(event.body || "{}");
+    const prompt = bodyData.prompt;
+    const isFollowUp = bodyData.isFollowUp || false;
+    const useElevenLabs = bodyData.useElevenLabs || false;
     
     if (!prompt) {
       return {
@@ -42,8 +49,6 @@ exports.handler = async function (event) {
       ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request regarding: "${prompt}". Your response MUST begin with a natural conversational opener followed naturally by the core gist of the topic—DO NOT repeat the user's question verbatim. Spoken length should be around 80-90 words so it takes roughly 30 seconds to speak.`
       : `${DR_LEON_BASE_PROMPT}\n\nInstruction: Answer clearly and engagingly. Your spoken answer MUST be around 40-45 words so it takes roughly 15 seconds to speak.`;
 
-    const maxTokens = isFollowUp ? 180 : 90;
-
     // 1. OpenAI Text Generation
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -51,17 +56,15 @@ exports.handler = async function (event) {
         { role: "system", content: systemInstruction },
         { role: "user", content: prompt }
       ],
-      max_tokens: maxTokens,
+      max_tokens: isFollowUp ? 180 : 90,
       temperature: 0.7,
     });
 
     const drLeonReply = completion.choices[0].message.content;
-
     let base64Audio = null;
 
-    // 2. Synthesize Audio
+    // 2. Synthesize Audio via External API
     if (useElevenLabs) {
-      // ElevenLabs Custom Voice Mode (Leon Clone)
       const ttsResponse = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,
         {
@@ -78,15 +81,18 @@ exports.handler = async function (event) {
         }
       );
 
-      if (ttsResponse.ok) {
-        const arrayBuffer = await ttsResponse.arrayBuffer();
-        base64Audio = Buffer.from(arrayBuffer).toString("base64");
+      if (!ttsResponse.ok) {
+        throw new Error(`ElevenLabs API error: ${await ttsResponse.text()}`);
       }
+
+      const arrayBuffer = await ttsResponse.arrayBuffer();
+      base64Audio = Buffer.from(arrayBuffer).toString("base64");
     } else {
-      // OpenAI Neural Voice Mode (Generic Mode - tts-1 with 'echo' voice)
+      // OpenAI TTS Endpoint (`tts-1` with 'echo' voice)
       const mp3Response = await openai.audio.speech.create({
         model: "tts-1",
-        voice: "echo", // Clean, clear male voice ideal for generic mode
+        voice: "echo",
+        response_format: "mp3",
         input: drLeonReply,
         speed: 0.95
       });
@@ -97,6 +103,7 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 200,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         text: drLeonReply, 
         audio: base64Audio 
@@ -104,9 +111,11 @@ exports.handler = async function (event) {
     };
 
   } catch (err) {
+    console.error("Netlify Function Error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: err.message || "Internal Server Error" }),
     };
   }
 };
