@@ -44,21 +44,24 @@ function playElevenLabsAudio(base64Audio) {
     });
 }
 
-// Browser Web Speech API fallback (Older/Mature British Male Accent)
+// Global reference array to prevent browser garbage collection bugs on Web Speech API
+window.utterances = window.utterances || [];
+
+// Browser Web Speech API fallback (Fixed against multi-turn freezing)
 function speakBritishAnswer(text) {
     if (!('speechSynthesis' in window)) return;
     
     if (window.currentAudio) {
         window.currentAudio.pause();
     }
+    
+    // Clear queue and cancel previous speech securely
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
 
     const voices = window.speechSynthesis.getVoices();
-    
-    // Preference order for mature/older sounding British male voices across OSes
     const britishVoice = voices.find(v => 
         v.lang === 'en-GB' && (
             v.name.includes('Daniel') || 
@@ -70,10 +73,16 @@ function speakBritishAnswer(text) {
 
     if (britishVoice) utterance.voice = britishVoice;
     
-    // Pitch and rate adjusted slightly for a mature, academic cadence
     utterance.rate = 0.95; 
     utterance.pitch = 0.90; 
-    window.speechSynthesis.speak(utterance);
+
+    // Store in global array to prevent garbage collection stopping subsequent turns
+    window.utterances.push(utterance);
+    
+    // Small timeout buffer ensures queue is fully free before launching next utterance
+    setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+    }, 50);
 }
 
 // Ensure voices are loaded for Web Speech API
@@ -223,10 +232,8 @@ function bindTopicPills() {
             
             if (topic === "Tell me more") {
                 if (!hasAskedFirstQuestion) {
-                    // Site overview summary
                     processUserQuery("What is this site about and what is its core purpose?", false);
                 } else {
-                    // Deep dive follow-up on active query
                     processUserQuery(lastAskedQuery, true);
                 }
             } else {
