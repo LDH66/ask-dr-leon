@@ -1,7 +1,8 @@
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
-let lastAskedQuery = "";
+let hasAskedFirstQuestion = false;
+let lastAskedQuery = "What is this site about and what is its core purpose?";
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNetlifyMicrophone();
@@ -79,6 +80,7 @@ function setupNetlifyMicrophone() {
                     if (transcribedText) {
                         const userInput = document.getElementById('userInput');
                         if (userInput) userInput.value = transcribedText;
+                        hasAskedFirstQuestion = true;
                         processUserQuery(transcribedText, false);
                     }
                     
@@ -139,7 +141,10 @@ function setupUIHandlers() {
     if (submitBtn && userInput) {
         submitBtn.addEventListener('click', () => {
             const query = userInput.value.trim();
-            if (query) processUserQuery(query, false);
+            if (query) {
+                hasAskedFirstQuestion = true;
+                processUserQuery(query, false);
+            }
         });
 
         userInput.addEventListener('keypress', (e) => {
@@ -147,6 +152,7 @@ function setupUIHandlers() {
                 const query = userInput.value.trim();
                 if (query) {
                     userInput.blur();
+                    hasAskedFirstQuestion = true;
                     processUserQuery(query, false);
                 }
             }
@@ -170,17 +176,18 @@ function bindTopicPills() {
     topicPills.forEach(pill => {
         pill.addEventListener('click', () => {
             const topic = pill.getAttribute('data-topic');
+            
             if (topic === "Tell me more") {
-                // Pull from lastAskedQuery, or fallback to the input box text, or default to "Vibe Coding"
-                let targetQuery = lastAskedQuery;
-                if (!targetQuery && userInput && userInput.value.trim()) {
-                    targetQuery = userInput.value.trim();
+                if (!hasAskedFirstQuestion) {
+                    // Default behavior before first question: 15-sec site overview summary
+                    processUserQuery("What is this site about and what is its core purpose?", false);
+                } else {
+                    // Deep dive (30-sec follow-up) on the last asked query
+                    processUserQuery(lastAskedQuery, true);
                 }
-                if (!targetQuery) {
-                    targetQuery = "Vibe Coding";
-                }
-                processUserQuery(targetQuery, true);
             } else {
+                // User clicked a specific study topic pill, marking it as their active context
+                hasAskedFirstQuestion = true;
                 if (userInput) userInput.value = topic;
                 processUserQuery(topic, false);
             }
@@ -191,6 +198,7 @@ function bindTopicPills() {
 // Send User Query to Backend Serverless Function (`chat.js`)
 async function processUserQuery(query, isFollowUp = false) {
     if (!isFollowUp) {
+        hasAskedFirstQuestion = true;
         lastAskedQuery = query;
     }
     
@@ -223,7 +231,7 @@ async function processUserQuery(query, isFollowUp = false) {
     speakBritishAnswer(`Regarding ${query}, mastering this core concept helps you build cleaner systems and direct AI tools with precision.`);
 }
 
-// Refresh dynamic suggestion pills (Cleaned of '(1 min)')
+// Refresh dynamic suggestion pills (guaranteed no '(1 min)')
 function updateRelatedTopics(queryKey) {
     const topicPillsContainer = document.getElementById('topicPills');
     if (!topicPillsContainer) return;
