@@ -171,12 +171,15 @@ function bindTopicPills() {
         pill.addEventListener('click', () => {
             const topic = pill.getAttribute('data-topic');
             if (topic === "Tell me more") {
-                // Trigger deeper follow-up on the last asked query
-                if (lastAskedQuery) {
-                    processUserQuery(lastAskedQuery, true);
-                } else {
-                    processUserQuery("Vibe Coding", true);
+                // Pull from lastAskedQuery, or fallback to the input box text, or default to "Vibe Coding"
+                let targetQuery = lastAskedQuery;
+                if (!targetQuery && userInput && userInput.value.trim()) {
+                    targetQuery = userInput.value.trim();
                 }
+                if (!targetQuery) {
+                    targetQuery = "Vibe Coding";
+                }
+                processUserQuery(targetQuery, true);
             } else {
                 if (userInput) userInput.value = topic;
                 processUserQuery(topic, false);
@@ -220,7 +223,7 @@ async function processUserQuery(query, isFollowUp = false) {
     speakBritishAnswer(`Regarding ${query}, mastering this core concept helps you build cleaner systems and direct AI tools with precision.`);
 }
 
-// Refresh dynamic suggestion pills (Removed '(1 min)' from button text)
+// Refresh dynamic suggestion pills (Cleaned of '(1 min)')
 function updateRelatedTopics(queryKey) {
     const topicPillsContainer = document.getElementById('topicPills');
     if (!topicPillsContainer) return;
