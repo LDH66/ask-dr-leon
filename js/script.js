@@ -1,4 +1,4 @@
-import { SimliClient, LogLevel } from "https://cdn.jsdelivr.net/npm/simli-client@latest/+esm";
+import { SimliClient, LogLevel } from "https://cdn.jsdelivr.net/npm/simli-client@latest/dist/simli-client.js";
 
 let mediaRecorder;
 let audioChunks = [];
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupModeToggle() {
-    const mediaModeBtn = document.getElementById('mediaModeBtn');
+    const mediaModeBtn = document.getElementById('voice-toggle-btn');
     const simliVideo = document.getElementById('simli-video');
     const defaultAvatarImg = document.getElementById('default-avatar-img');
 
@@ -266,8 +266,8 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
 }
 
 function setupNetlifyMicrophone() {
-    const micBtn = document.getElementById('micBtn');
-    const listeningIndicator = document.getElementById('listeningIndicator');
+    const micBtn = document.getElementById('mic-btn');
+    const listeningIndicator = document.getElementById('listening-indicator');
 
     if (!micBtn) return; // Null safety guard prevents crashes
     micBtn.style.display = 'flex';
@@ -305,7 +305,7 @@ function setupNetlifyMicrophone() {
                     const transcribedText = await sendAudioToBackend(audioBlob);
                     
                     if (transcribedText) {
-                        const userInput = document.getElementById('userInput');
+                        const userInput = document.getElementById('prompt-input');
                         if (userInput) userInput.value = transcribedText;
                         hasAskedFirstQuestion = true;
                         processUserQuery(transcribedText, false);
@@ -359,9 +359,9 @@ async function sendAudioToBackend(audioBlob) {
 }
 
 function setupUIHandlers() {
-    const submitBtn = document.getElementById('submitBtn');
-    const stopAudioBtn = document.getElementById('stopAudioBtn');
-    const userInput = document.getElementById('userInput');
+    const submitBtn = document.getElementById('submit-btn');
+    const stopAudioBtn = document.getElementById('stop-audio-btn');
+    const userInput = document.getElementById('prompt-input');
 
     if (submitBtn && userInput) {
         submitBtn.addEventListener('click', () => {
@@ -395,7 +395,7 @@ function setupUIHandlers() {
 
 function bindTopicPills() {
     const topicPills = document.querySelectorAll('.pill-btn');
-    const userInput = document.getElementById('userInput');
+    const userInput = document.getElementById('prompt-input');
 
     topicPills.forEach(pill => {
         pill.addEventListener('click', () => {
@@ -424,7 +424,7 @@ async function processUserQuery(query, isFollowUp = false) {
 
     stopCurrentSpeech();
 
-    const userInput = document.getElementById('userInput');
+    const userInput = document.getElementById('prompt-input');
     const originalPlaceholder = userInput ? userInput.placeholder : "";
     if (userInput) {
         userInput.value = "";
@@ -477,7 +477,7 @@ async function processUserQuery(query, isFollowUp = false) {
 }
 
 function updateRelatedTopics(queryKey) {
-    const topicPillsContainer = document.getElementById('topicPills');
+    const topicPillsContainer = document.getElementById('topic-pills');
     if (!topicPillsContainer) return;
 
     let newPillsHTML = `<button class="pill-btn primary" data-topic="Tell me more">Tell me more</button>`;

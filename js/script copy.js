@@ -29,7 +29,7 @@ async function initSimli() {
     const data = await res.json();
     
     console.log("[SIMLI] Token response from backend:", data);
-    const sessionToken = data.session_token;
+    const sessionToken = data.session_token || data.token;
 
     if (!sessionToken) {
       console.error("[SIMLI] Failed to retrieve session token string from Netlify.");
@@ -269,7 +269,8 @@ function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
 
-    if (micBtn) micBtn.style.display = 'flex';
+    if (!micBtn) return; // Null safety guard prevents crashes
+    micBtn.style.display = 'flex';
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
     micBtn.addEventListener('click', async () => {
