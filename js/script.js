@@ -4,6 +4,7 @@ let isRecording = false;
 let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
 let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic")
+let lastFillerNum = null; // Tracks the last played filler to prevent back-to-back repeats
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
@@ -34,10 +35,16 @@ function setupVoiceToggle() {
     });
 }
 
-// Play an instant local filler sound and return a Promise that resolves when it finishes 100%
+// Play an instant local filler sound, varying the selection and preventing back-to-back repeats
 function playInstantFiller() {
     return new Promise((resolve) => {
-        const fillerNum = Math.floor(Math.random() * 3) + 1; // Random number 1, 2, or 3
+        let fillerNum;
+        do {
+            fillerNum = Math.floor(Math.random() * 3) + 1; // Random number 1, 2, or 3
+        } while (fillerNum === lastFillerNum); // Pick again if it matches the previous one
+
+        lastFillerNum = fillerNum;
+
         const suffix = (currentVoiceEngine === "elevenlabs") ? "leon" : "generic";
         const fillerSrc = `audio/filler${fillerNum}_${suffix}.mp3`;
 
@@ -74,7 +81,6 @@ function queueAudioStream(base64Audio) {
 
     console.log("[DR. LEON] Main response audio ready. Waiting for filler to complete...");
 
-    // Attach to window so stopAudioBtn can still pause it anytime
     const playMain = () => {
         if (window.currentAudio && window.currentAudio.paused && window.currentAudio.src.startsWith('data:audio')) {
             return; // Already playing
@@ -87,7 +93,6 @@ function queueAudioStream(base64Audio) {
         });
     };
 
-    // If a filler is currently playing, hook into its completion. Otherwise play immediately.
     if (window.currentAudio && !window.currentAudio.ended) {
         const existingOnEnded = window.currentAudio.onended;
         window.currentAudio.onended = () => {
@@ -248,7 +253,7 @@ function bindTopicPills() {
     });
 }
 
-// Process Query: Instantly plays filler in parallel while fetching background response, then queues main audio cleanly
+// Process Query: Instantly plays varying filler in parallel while fetching background response, then queues main audio cleanly
 async function processUserQuery(query, isFollowUp = false) {
     if (!isFollowUp) {
         hasAskedFirstQuestion = true;
@@ -258,7 +263,7 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
-    // 1. Instantly trigger the local filler sound
+    // 1. Instantly trigger the local filler sound with anti-repeat variation
     const fillerPromise = playInstantFiller();
 
     console.log("[DR. LEON] Fetching background response for:", query);
@@ -278,10 +283,10 @@ async function processUserQuery(query, isFollowUp = false) {
             const data = await response.json();
             console.log("[DR. LEON] Background response received.");
             
-            // 2. Wait for the filler to finish 100% before allowing the main audio to trigger
+            // 2. Wait for the filler to finish 100% before allowing the main audio to trigger[cite: 1]
             await fillerPromise;
 
-            // 3. Seamlessly play the real response audio
+            // 3. Seamlessly play the real response audio[cite: 1]
             queueAudioStream(data.audio);
             return;
         } else {
