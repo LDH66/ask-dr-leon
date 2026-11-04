@@ -15,12 +15,9 @@ exports.handler = async function (event) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        apiKey: apiKey,
-        config: {
-          faceId: SIMLI_FACE_ID,
-          maxSessionLength: 600,
-          maxIdleTime: 180
-        }
+        faceId: SIMLI_FACE_ID,
+        maxSessionLength: 600,
+        maxIdleTime: 180
       })
     });
 
