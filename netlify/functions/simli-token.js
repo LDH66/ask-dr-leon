@@ -4,12 +4,12 @@ export async function handler(event, context) {
   }
 
   const apiKey = process.env.SIMLI_API_KEY;
-  const faceId = process.env.SIMLI_FACE_ID;
+  const faceId = "YOUR_SIMLI_FACE_ID_HERE"; // Put your hardcoded Face ID string right here
 
-  if (!apiKey || !faceId) {
+  if (!apiKey) {
     return { 
       statusCode: 500, 
-      body: JSON.stringify({ error: "Missing SIMLI_API_KEY or SIMLI_FACE_ID in environment variables." }) 
+      body: JSON.stringify({ error: "Missing SIMLI_API_KEY in environment variables." }) 
     };
   }
 
