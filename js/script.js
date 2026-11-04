@@ -1,4 +1,4 @@
-import SimliClient from "https://unpkg.com/simli-client@latest/dist/index.js";
+import { SimliClient, LogLevel } from "https://cdn.jsdelivr.net/npm/simli-client@latest/+esm";
 
 let mediaRecorder;
 let audioChunks = [];
@@ -9,6 +9,7 @@ let currentVoiceEngine = "generic";
 
 let simliClient = null;
 let audioCtx = null;
+const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
 
 async function initSimli() {
   try {
@@ -28,14 +29,23 @@ async function initSimli() {
       return;
     }
 
-    // Instantiate SimliClient using default import and positional arguments
-    simliClient = new SimliClient(
-      data.session_token,
-      videoElement,
-      audioElement,
-      null,           
-      4   
-    );
+    // Instantiate SimliClient with empty constructor and use Initialize() per official specs
+    simliClient = new SimliClient();
+
+    const simliConfig = {
+      apiKey: "",
+      session_token: data.session_token,
+      videoRef: videoElement,
+      audioRef: audioElement,
+      FaceID: SIMLI_FACE_ID,
+      handleSilence: true,
+      maxSessionLength: 600,
+      maxIdleTime: 180,
+      logLevel: LogLevel.INFO,
+      mode: "livekit"
+    };
+
+    simliClient.Initialize(simliConfig);
 
     simliClient.on("start", () => {
       console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
@@ -114,7 +124,7 @@ function playInstantFiller() {
     });
 }
 
-// Helper to decode base64 audio into raw PCM stream for Simli Lip-Sync
+// Helper to decode base64 audio into raw PCM16 stream for Simli Lip-Sync
 async function sendAudioToSimli(base64Audio) {
     if (!simliClient) return;
     try {
@@ -129,9 +139,8 @@ async function sendAudioToSimli(base64Audio) {
         }
 
         const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
-        const channelData = audioBuffer.getChannelData(0); // Mono PCM float data
+        const channelData = audioBuffer.getChannelData(0); 
         
-        // Convert float32 PCM to Int16 PCM bytes required by Simli lip-sync
         const pcm16 = new Int16Array(channelData.length);
         for (let i = 0; i < channelData.length; i++) {
             let s = Math.max(-1, Math.min(1, channelData[i]));
@@ -158,7 +167,6 @@ function queueAudioStream(base64Audio) {
         window.currentAudio = new Audio(audioUrl);
         
         window.currentAudio.play().then(() => {
-            // Trigger raw PCM lip-sync buffer conversion and send to Simli
             sendAudioToSimli(base64Audio);
         }).catch(err => {
             console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
