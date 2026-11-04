@@ -16,11 +16,11 @@ export async function handler(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: "Prompt is required" }) };
     }
 
-    console.log(`[CHAT FUNCTION] Processing prompt: "${prompt}" (FollowUp: ${isFollowUp})`);
+    console.log(`[CHAT FUNCTION] Processing prompt: "${prompt}" (FishAudio: ${useFishAudio})`);
 
-    // 1. Generate a short, snappy text response from OpenAI (Fast model + strict token limit)
+    // 1. Fast text generation (strict limit for instant speed)
     const chatCompletion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Fast and lightweight model
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -31,7 +31,7 @@ export async function handler(event, context) {
           content: prompt
         }
       ],
-      max_tokens: 120, // Strict limit ensures fast generation time
+      max_tokens: 120,
       temperature: 0.7,
     });
 
@@ -40,12 +40,12 @@ export async function handler(event, context) {
 
     let base64Audio = "";
 
-    // 2. Convert text to speech using the ultra-fast 'tts-1' model
+    // 2. Select TTS Engine based on frontend toggle state
     if (useFishAudio) {
-      // Placeholder or integration for Fish Audio if enabled
-      // If Fish Audio isn't fully configured yet, it falls back gracefully or uses OpenAI TTS
-      base64Audio = await generateOpenAITTS(replyText);
+      console.log("[CHAT FUNCTION] Routing to Fish Audio...");
+      base64Audio = await generateFishAudio(replyText);
     } else {
+      console.log("[CHAT FUNCTION] Routing to OpenAI TTS...");
       base64Audio = await generateOpenAITTS(replyText);
     }
 
@@ -68,14 +68,55 @@ export async function handler(event, context) {
 }
 
 async function generateOpenAITTS(text) {
-  // Using 'tts-1' (standard speed model) instead of 'tts-1-hd' for maximum speed
   const mp3Response = await openai.audio.speech.create({
     model: "tts-1",
-    voice: "onyx", // Deep, professional voice matching Dr. Leon's persona
+    voice: "onyx",
     input: text,
-    speed: 1.05, // Slightly accelerated speech for snappier delivery
+    speed: 1.05,
   });
 
   const buffer = Buffer.from(await mp3Response.arrayBuffer());
   return buffer.toString("base64");
+}
+
+async function generateFishAudio(text) {
+  const fishApiKey = process.env.FISH_AUDIO_API_KEY;
+  const fishReferenceId = process.env.FISH_AUDIO_MODEL_ID || process.env.FISH_AUDIO_REFERENCE_ID;
+
+  if (!fishApiKey) {
+    console.warn("[FISH AUDIO] Missing FISH_AUDIO_API_KEY in environment variables. Falling back to OpenAI TTS.");
+    return generateOpenAITTS(text);
+  }
+
+  try {
+    // Standard Fish Audio API endpoint request
+    const response = await fetch("https://api.fish.audio/v1/tts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${fishApiKey}`,
+        "Content-Type": "application/json",
+        "Model": "tts-1"
+      },
+      body: JSON.stringify({
+        text: text,
+        reference_id: fishReferenceId || undefined,
+        format: "mp3",
+        normalize: true
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[FISH AUDIO API ERROR]", response.status, errText);
+      throw new Error(`Fish Audio failed with status ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return buffer.toString("base64");
+
+  } catch (error) {
+    console.error("[FISH AUDIO] Error generating audio, falling back to OpenAI TTS:", error);
+    return generateOpenAITTS(text);
+  }
 }
