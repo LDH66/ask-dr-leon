@@ -326,7 +326,6 @@ async function processUserQuery(query, isFollowUp = false) {
 
         if (response.ok) {
             const data = await response.json();
-            // Fillers bypassed for instant response speed
             queueAudioStream(data.audio);
             return;
         } else {
@@ -360,3 +359,7 @@ function updateRelatedTopics(queryKey) {
             <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
         `;
     }
+
+    topicPillsContainer.innerHTML = newPillsHTML;
+    bindTopicPills(); 
+}
