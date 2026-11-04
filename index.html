@@ -52,7 +52,7 @@
                 <!-- Static FAQ Video Player (Used for instant matching) -->
                 <video id="faq-video" playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover; display:none;"></video>
                 
-                <!-- Live Simli WebRTC Stream Elements (Used for fallback / custom chat) -->
+                <!-- Live Simli WebRTC Stream Elements -->
                 <video id="simli-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
                 <audio id="simli-audio" autoplay></audio>
 
@@ -64,13 +64,19 @@
         <section class="graphics-pane">
             <div class="topic-menu-label">Quick FAQ Topics</div>
             <div id="topic-pills" class="topic-pills">
-                <!-- Dynamically injected via script.js from data/faqs.json -->
+                <!-- Hardcoded FAQ Pills to guarantee visibility -->
+                <button class="pill-btn primary" data-faq-id="faq_01">What is Vibe Coding?</button>
+                <button class="pill-btn" data-faq-id="faq_02">Netlify Serverless Setup</button>
+                <button class="pill-btn" data-faq-id="faq_03">Fish Audio Cloned Voice</button>
+                <button class="pill-btn" data-faq-id="faq_04">Simli WebRTC Stream</button>
+                <button class="pill-btn" data-faq-id="faq_05">Fuse.js Fuzzy Matching</button>
+                <button class="pill-btn" data-faq-id="faq_06">Media Production Workflow</button>
             </div>
         </section>
 
     </div>
 
     <!-- Main Client Application Script -->
-    <script src="js/script.js?v=7.0"></script>
+    <script src="js/script.js?v=7.1"></script>
 </body>
 </html>
