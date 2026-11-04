@@ -118,7 +118,7 @@ function playInstantFiller() {
     });
 }
 
-// Helper to decode base64 audio into raw PCM16 stream for Simli Lip-Sync
+// Helper to decode base64 audio into raw PCM16 stream for Simli Lip-Sync & Playback
 async function sendAudioToSimli(base64Audio) {
     if (!simliClient) return;
     try {
@@ -153,29 +153,8 @@ function queueAudioStream(base64Audio) {
         return;
     }
 
-    const playMain = () => {
-        if (window.currentAudio && window.currentAudio.paused && window.currentAudio.src.startsWith('data:audio')) {
-            return;
-        }
-        const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
-        window.currentAudio = new Audio(audioUrl);
-        
-        window.currentAudio.play().then(() => {
-            sendAudioToSimli(base64Audio);
-        }).catch(err => {
-            console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
-        });
-    };
-
-    if (window.currentAudio && !window.currentAudio.ended) {
-        const existingOnEnded = window.currentAudio.onended;
-        window.currentAudio.onended = () => {
-            if (typeof existingOnEnded === 'function') existingOnEnded();
-            playMain();
-        };
-    } else {
-        playMain();
-    }
+    // Routed strictly through Simli client to prevent local audio duplication / echo
+    sendAudioToSimli(base64Audio);
 }
 
 function setupNetlifyMicrophone() {
@@ -228,164 +207,4 @@ function setupNetlifyMicrophone() {
                 mediaRecorder.start();
                 isRecording = true;
                 micBtn.classList.add('listening');
-                if (listeningIndicator) {
-                    listeningIndicator.textContent = "Listening... Tap mic again to send.";
-                    listeningIndicator.style.display = 'block';
-                }
-
-            } catch (err) {
-                console.warn("Microphone error:", err);
-                alert("Microphone access denied or unsupported.");
-            }
-        } else {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-            }
-            isRecording = false;
-            micBtn.classList.remove('listening');
-        }
-    });
-}
-
-async function sendAudioToBackend(audioBlob) {
-    try {
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        
-        return new Promise((resolve) => {
-            reader.onloadend = async () => {
-                const base64Audio = reader.result.split(',')[1];
-                const response = await fetch('/.netlify/functions/transcribe', {
-                    method: 'POST',
-                    body: base64Audio
-                });
-                const data = await response.json();
-                resolve(data.text);
-            };
-        });
-    } catch (error) {
-        console.error("Transcription error:", error);
-        return null;
-    }
-}
-
-function setupUIHandlers() {
-    const submitBtn = document.getElementById('submitBtn');
-    const stopAudioBtn = document.getElementById('stopAudioBtn');
-    const userInput = document.getElementById('userInput');
-
-    if (submitBtn && userInput) {
-        submitBtn.addEventListener('click', () => {
-            const query = userInput.value.trim();
-            if (query) {
-                hasAskedFirstQuestion = true;
-                processUserQuery(query, false);
-            }
-        });
-
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = userInput.value.trim();
-                if (query) {
-                    userInput.blur();
-                    hasAskedFirstQuestion = true;
-                    processUserQuery(query, false);
-                }
-            }
-        });
-    }
-
-    if (stopAudioBtn) {
-        stopAudioBtn.addEventListener('click', () => {
-            if (window.currentAudio) window.currentAudio.pause();
-        });
-    }
-
-    bindTopicPills();
-}
-
-function bindTopicPills() {
-    const topicPills = document.querySelectorAll('.pill-btn');
-    const userInput = document.getElementById('userInput');
-
-    topicPills.forEach(pill => {
-        pill.addEventListener('click', () => {
-            const topic = pill.getAttribute('data-topic');
-            
-            if (topic === "Tell me more") {
-                if (!hasAskedFirstQuestion) {
-                    processUserQuery("What is this site about and what is its core purpose?", false);
-                } else {
-                    processUserQuery(lastAskedQuery, true);
-                }
-            } else {
-                hasAskedFirstQuestion = true;
-                if (userInput) userInput.value = topic;
-                processUserQuery(topic, false);
-            }
-        });
-    });
-}
-
-async function processUserQuery(query, isFollowUp = false) {
-    if (!isFollowUp) {
-        hasAskedFirstQuestion = true;
-        lastAskedQuery = query;
-    }
-    
-    const q = query.toLowerCase();
-    updateRelatedTopics(q);
-
-    const fillerPromise = playInstantFiller();
-
-    try {
-        const response = await fetch('/.netlify/functions/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                prompt: query, 
-                isFollowUp: isFollowUp,
-                useFishAudio: (currentVoiceEngine === "fishaudio")
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            await fillerPromise;
-            queueAudioStream(data.audio);
-            return;
-        } else {
-            console.error("[DR. LEON ERROR] Server returned status:", response.status);
-        }
-    } catch (error) {
-        console.error("[DR. LEON ERROR] Fetch error:", error);
-    }
-}
-
-function updateRelatedTopics(queryKey) {
-    const topicPillsContainer = document.getElementById('topicPills');
-    if (!topicPillsContainer) return;
-
-    let newPillsHTML = `<button class="pill-btn primary" data-topic="Tell me more">Tell me more</button>`;
-
-    if (queryKey.includes('vibe coding')) {
-        newPillsHTML += `
-            <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
-            <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
-            <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
-            <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
-            <button class="pill-btn" data-topic="What is HTML?">What is HTML?</button>
-        `;
-    } else {
-        newPillsHTML += `
-            <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
-            <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
-            <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
-            <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
-            <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
-        `;
-    }
-
-    topicPillsContainer.innerHTML = newPillsHTML;
-    bindTopicPills(); 
-}
+                if (
