@@ -5,11 +5,15 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  // Check what key is actually being loaded
-  const rawKey = process.env.SIMLI_API_KEY;
-  console.log("[NETLIFY] SIMLI_API_KEY present:", !!rawKey, "Length:", rawKey ? rawKey.length : 0);
+  const apiKey = process.env.SIMLI_API_KEY;
 
-  const apiKey = rawKey || "kdaiuahahvdm2sib2rzqm";
+  if (!apiKey) {
+    console.error("SIMLI_API_KEY is missing from environment variables.");
+    return { 
+      statusCode: 500, 
+      body: JSON.stringify({ error: "Server configuration error: SIMLI_API_KEY is not set." }) 
+    };
+  }
 
   try {
     const response = await fetch("https://api.simli.ai/compose/token", {
@@ -25,14 +29,14 @@ exports.handler = async function (event) {
       })
     });
 
-    const respText = await response.text();
-    console.log("[NETLIFY] Simli API Status:", response.status, "Response:", respText);
-
     if (!response.ok) {
-      return { statusCode: response.status, body: JSON.stringify({ error: respText }) };
+      const errText = await response.text();
+      console.error("Simli Token Error Response:", errText);
+      return { statusCode: response.status, body: JSON.stringify({ error: errText }) };
     }
 
-    const data = JSON.parse(respText);
+    const data = await response.json();
+    
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
