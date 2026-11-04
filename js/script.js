@@ -5,7 +5,7 @@ let audioChunks = [];
 let isRecording = false;
 let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
-let currentVoiceEngine = "generic"; 
+let currentMode = "video"; // "video" or "audio"
 
 let simliClient = null;
 let audioCtx = null;
@@ -13,6 +13,8 @@ let isAudioUnlocked = false;
 let currentFetchController = null;
 
 async function initSimli() {
+  if (currentMode !== "video") return; // Do not initialize Simli if user is in Audio-only mode
+
   if (simliClient) {
     try {
       await simliClient.close();
@@ -73,28 +75,14 @@ async function initSimli() {
   }
 }
 
-// --- Shuffle Pool Logic for Fillers ---
-let fillerPool = [];
-
-function getNextFillerNum() {
-    if (fillerPool.length === 0) {
-        fillerPool = [1, 2, 3, 4, 5, 6, 7, 8];
-        for (let i = fillerPool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [fillerPool[i], fillerPool[j]] = [fillerPool[j], fillerPool[i]];
-        }
-    }
-    return fillerPool.shift();
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
-    console.log("[DR. LEON] Simli ES Module Pipeline Active 🚀");
+    console.log("[DR. LEON] Pipeline Active 🚀");
     console.log("--------------------------------------------------");
     initSimli();
     setupNetlifyMicrophone();
     setupUIHandlers();
-    setupVoiceToggle();
+    setupModeToggle();
     updateRelatedTopics(""); 
 
     const unlockAudio = () => {
@@ -121,21 +109,49 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('keydown', unlockAudio);
 });
 
-function setupVoiceToggle() {
-    const voiceToggleBtn = document.getElementById('voiceToggleBtn');
-    if (!voiceToggleBtn) return;
+function setupModeToggle() {
+    const mediaModeBtn = document.getElementById('mediaModeBtn');
+    const simliVideo = document.getElementById('simli-video');
+    const defaultAvatarImg = document.getElementById('default-avatar-img');
 
-    voiceToggleBtn.addEventListener('click', () => {
-        if (currentVoiceEngine === "generic") {
-            currentVoiceEngine = "fishaudio";
-            voiceToggleBtn.textContent = "Voice: Leon";
-            voiceToggleBtn.classList.add('leon-active');
-            console.log("[DR. LEON] Switched engine to: Fish Audio (Leon)");
+    if (!mediaModeBtn) return;
+
+    mediaModeBtn.addEventListener('click', async () => {
+        stopCurrentSpeech();
+
+        if (currentMode === "video") {
+            // Switch to Audio Mode
+            currentMode = "audio";
+            mediaModeBtn.textContent = "Mode: Audio";
+            mediaModeBtn.classList.remove('leon-active');
+            
+            // Disconnect Simli to save rate limits and bandwidth
+            if (simliClient) {
+                try {
+                    await simliClient.close();
+                } catch (e) {}
+                simliClient = null;
+            }
+
+            // Swap visual elements
+            if (simliVideo) simliVideo.style.display = 'none';
+            if (defaultAvatarImg) defaultAvatarImg.style.display = 'block';
+
+            console.log("[DR. LEON] Switched to Audio-only mode (Still image + Fish Audio)");
         } else {
-            currentVoiceEngine = "generic";
-            voiceToggleBtn.textContent = "Voice: Generic";
-            voiceToggleBtn.classList.remove('leon-active');
-            console.log("[DR. LEON] Switched engine to: OpenAI TTS (Generic)");
+            // Switch to Video Mode
+            currentMode = "video";
+            mediaModeBtn.textContent = "Mode: Video";
+            mediaModeBtn.classList.add('leon-active');
+
+            // Swap visual elements
+            if (simliVideo) simliVideo.style.display = 'block';
+            if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
+
+            // Reconnect Simli avatar
+            initSimli();
+
+            console.log("[DR. LEON] Switched to Video mode (Simli Avatar + Fish Audio)");
         }
     });
 }
@@ -152,11 +168,10 @@ function stopCurrentSpeech() {
         audioElement.currentTime = 0;
     }
 
-    // Official Simli SDK method to drop all queued audio and freeze avatar immediately
-    if (simliClient) {
+    if (simliClient && currentMode === "video") {
         try {
             if (typeof simliClient.ClearBuffer === 'function') {
-                simliClient.ClearBuffer(); // Official Simli SDK method
+                simliClient.ClearBuffer();
             } else if (typeof simliClient.clearBuffer === 'function') {
                 simliClient.clearBuffer();
             } else if (typeof simliClient.clearAudioData === 'function') {
@@ -168,57 +183,77 @@ function stopCurrentSpeech() {
     }
 }
 
-async function sendAudioToSimli(base64Audio, isImmediate = false) {
-    if (!simliClient) return;
-    try {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        }
-        if (audioCtx.state === 'suspended') {
-            await audioCtx.resume();
-        }
+async function handleAudioPlayback(base64Audio) {
+    if (!base64Audio) return;
 
-        const binaryString = atob(base64Audio);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
+    if (currentMode === "video" && simliClient) {
+        // Video Mode: Stream audio chunks into Simli for lip-syncing
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            }
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
 
-        const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
-        const channelData = audioBuffer.getChannelData(0); 
+            const binaryString = atob(base64Audio);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
+            const channelData = audioBuffer.getChannelData(0); 
+            
+            const pcm16 = new Int16Array(channelData.length);
+            for (let i = 0; i < channelData.length; i++) {
+                let s = Math.max(-1, Math.min(1, channelData[i]));
+                pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            
+            const audioChunkData = new Uint8Array(pcm16.buffer);
+
+            if (typeof simliClient.sendAudioDataImmediate === 'function') {
+                simliClient.sendAudioDataImmediate(audioChunkData);
+            } else {
+                simliClient.sendAudioData(audioChunkData);
+            }
+
+            const audioElement = document.getElementById("simli-audio");
+            if (audioElement) {
+                audioElement.muted = false;
+                audioElement.play().catch(() => {});
+            }
+        } catch (e) {
+            console.warn("[SIMLI] PCM conversion fallback:", e);
+        }
+    } else {
+        // Audio Mode: Play MP3 audio directly via standard HTML5 Audio with Default-image.jpg on screen
+        if (window.currentAudio) {
+            window.currentAudio.pause();
+        }
+        const audioBlob = b64toBlob(base64Audio, 'audio/mp3');
+        const audioUrl = URL.createObjectURL(audioBlob);
         
-        const pcm16 = new Int16Array(channelData.length);
-        for (let i = 0; i < channelData.length; i++) {
-            let s = Math.max(-1, Math.min(1, channelData[i]));
-            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-        }
-        
-        const audioChunkData = new Uint8Array(pcm16.buffer);
-
-        // Use sendAudioDataImmediate if available to drop lingering queue and play new audio instantly
-        if (isImmediate && typeof simliClient.sendAudioDataImmediate === 'function') {
-            simliClient.sendAudioDataImmediate(audioChunkData);
-        } else {
-            simliClient.sendAudioData(audioChunkData);
-        }
-
-        const audioElement = document.getElementById("simli-audio");
-        if (audioElement) {
-            audioElement.muted = false;
-            audioElement.play().catch(() => {});
-        }
-    } catch (e) {
-        console.warn("[SIMLI] PCM conversion fallback:", e);
+        window.currentAudio = new Audio(audioUrl);
+        window.currentAudio.play().catch(e => console.warn("Audio play error:", e));
     }
 }
 
-function queueAudioStream(base64Audio) {
-    if (!base64Audio) {
-        console.error("[DR. LEON ERROR] No base64 audio returned!");
-        return;
+function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
     }
-    sendAudioToSimli(base64Audio, true); // true forces immediate flush of old buffers
+    return new Blob(byteArrays, { type: contentType });
 }
 
 function setupNetlifyMicrophone() {
@@ -372,16 +407,13 @@ function bindTopicPills() {
 }
 
 async function processUserQuery(query, isFollowUp = false) {
-    // 1. Cancel any previous pending request immediately
     if (currentFetchController) {
         currentFetchController.abort();
     }
     currentFetchController = new AbortController();
 
-    // 2. Kill current audio & clear Simli buffer instantly so mouth stops moving right away
     stopCurrentSpeech();
 
-    // 3. Show loading state in input placeholder so user knows it's working
     const userInput = document.getElementById('userInput');
     const originalPlaceholder = userInput ? userInput.placeholder : "";
     if (userInput) {
@@ -405,8 +437,7 @@ async function processUserQuery(query, isFollowUp = false) {
             signal: currentFetchController.signal,
             body: JSON.stringify({ 
                 prompt: query, 
-                isFollowUp: isFollowUp,
-                useFishAudio: (currentVoiceEngine === "fishaudio")
+                isFollowUp: isFollowUp
             })
         });
 
@@ -417,7 +448,7 @@ async function processUserQuery(query, isFollowUp = false) {
 
         if (response.ok) {
             const data = await response.json();
-            queueAudioStream(data.audio);
+            handleAudioPlayback(data.audio);
             return;
         } else {
             console.error("[DR. LEON ERROR] Server returned status:", response.status);
