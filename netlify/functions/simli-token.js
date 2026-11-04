@@ -1,4 +1,3 @@
-const SIMLI_API_KEY = process.env.SIMLI_API_KEY;
 const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
 
 exports.handler = async function (event) {
@@ -6,15 +5,19 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
+  // Fallback to hardcoded key if environment variable is missing in Netlify
+  const apiKey = process.env.SIMLI_API_KEY || "kdaiuahahvdm2sib2rzqm";
+
   try {
     const response = await fetch("https://api.simli.ai/compose/token", {
       method: "POST",
       headers: {
-        "x-simli-api-key": SIMLI_API_KEY,
+        "x-simli-api-key": apiKey,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         faceId: SIMLI_FACE_ID,
+        apiVersion: "v2",
         maxSessionLength: 600,
         maxIdleTime: 180
       })
@@ -22,15 +25,17 @@ exports.handler = async function (event) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Simli Token Error:", errText);
+      console.error("Simli Token Error Response:", errText);
       return { statusCode: response.status, body: JSON.stringify({ error: errText }) };
     }
 
     const data = await response.json();
+    
+    // Ensure we send back the session token clearly
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ session_token: data.session_token || data.token })
     };
   } catch (err) {
     console.error("Simli Function Crash:", err);
