@@ -46,19 +46,18 @@
             <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
         </section>
 
-        <!-- PANE 3: Avatar Pane -->
-        <section class="pane avatar-pane">
-            <div class="avatar-wrapper">
-                <!-- Simli Video Stream (shown in Video Mode) -->
-                <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
-                
-                <!-- Fallback Still Image (shown in Audio Mode) -->
-                <img id="default-avatar-img" src="images/Default-image.jpg" alt="Dr. Leon" style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;">
-
-                <audio id="simli-audio" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></audio>
-                <div class="avatar-glow"></div>
-            </div>
-        </section>
+       <!-- PANE 3: Avatar Pane -->
+<section class="pane avatar-pane">
+    <div class="avatar-wrapper">
+        <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
+        <img id="default-avatar-img" src="images/Default-image.jpg" alt="Dr. Leon" style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;">
+        
+        <!-- iOS-friendly audio element styling -->
+        <audio id="simli-audio" autoplay playsinline controls style="position: absolute; bottom: 0; left: 0; width: 100px; height: 30px; opacity: 0.01; z-index: 3; pointer-events: auto;"></audio>
+        
+        <div class="avatar-glow"></div>
+    </div>
+</section>
 
         <!-- PANE 4: Graphics Pane -->
         <section class="pane graphics-pane" id="graphicsPane">
