@@ -1,4 +1,4 @@
-import { SimliClient, LogLevel } from "https://cdn.jsdelivr.net/npm/simli-client@latest/+esm";
+import { SimliClient, LogLevel } from "https://unpkg.com/simli-client@latest/dist/index.js";
 
 let mediaRecorder;
 let audioChunks = [];
@@ -11,7 +11,7 @@ let simliClient = null;
 
 async function initSimli() {
   try {
-    // 1. Fetch token from your working Netlify function
+    // 1. Fetch token from your Netlify function
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
     
@@ -24,31 +24,31 @@ async function initSimli() {
     const audioElement = document.getElementById("simli-audio");
 
     if (!videoElement || !audioElement) {
-      console.error("[SIMLI ERROR] Missing video/audio DOM references.");
+      console.error("[SIMLI ERROR] Missing video/audio DOM elements.");
       return;
     }
 
-    // 2. Instantiate SimliClient using the official positional signature
-    // constructor(session_token, videoElement, audioElement, iceServers, logLevel)
+    // 2. Instantiate using the official Simli SDK signature:
+    // new SimliClient(token, videoElement, audioElement, iceServers, logLevel)
     simliClient = new SimliClient(
       data.session_token,
       videoElement,
       audioElement,
-      null,              // null for default LiveKit mode
-      LogLevel.INFO      // Log level configuration
+      null,           // null for default LiveKit mode
+      LogLevel.INFO   // Logging level
     );
 
     simliClient.on("start", () => {
-      console.log("[SIMLI] Avatar stream successfully connected and visible! 🚀");
+      console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
     });
 
     simliClient.on("error", (err) => {
       console.error("[SIMLI ERROR] Runtime error event:", err);
     });
 
-    // 3. Start the WebRTC session
+    // 3. Start the client session
     await simliClient.start();
-    console.log("[SIMLI] Client start requested successfully.");
+    console.log("[SIMLI] client.start() resolved successfully.");
 
   } catch (err) {
     console.error("[SIMLI ERROR] Initialization failed:", err);
@@ -71,7 +71,7 @@ function getNextFillerNum() {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
-    console.log("[DR. LEON] Initializing Simli ES Module Pipeline 🚀");
+    console.log("[DR. LEON] Simli ES Module Pipeline Active 🚀");
     console.log("--------------------------------------------------");
     initSimli();
     setupNetlifyMicrophone();
@@ -137,7 +137,7 @@ function queueAudioStream(base64Audio) {
         window.currentAudio = new Audio(audioUrl);
         
         window.currentAudio.play().then(() => {
-            // Send audio chunk buffer to Simli for real-time lip sync
+            // Send PCM / audio stream bytes into Simli client for lip synchronization
             if (simliClient) {
                 simliClient.sendAudioData(bytes);
             }
