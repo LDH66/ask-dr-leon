@@ -21,7 +21,6 @@
                 Vibe Coding Explained
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <!-- Voice Engine Toggle Button -->
                 <button id="voiceToggleBtn" class="voice-toggle-btn" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Voice: Generic</button>
                 <button class="menu-btn" aria-label="Menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -49,7 +48,6 @@
         <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
-                <!-- Simli Live Video Stream & Hidden Audio Stream -->
                 <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
                 <audio id="simli-audio" autoplay style="display: none;"></audio>
                 <div class="avatar-glow"></div>
@@ -73,9 +71,8 @@
 
     </div>
 
-    <!-- Simli Client SDK -->
+    <!-- Simli Client UMD SDK -->
     <script src="https://cdn.jsdelivr.net/npm/simli-client@latest/dist/simli-client.js"></script>
-    <!-- Application Script with cache-buster -->
-    <script src="js/script.js?v=2.2"></script>
+    <script src="js/script.js?v=2.3"></script>
 </body>
 </html>
