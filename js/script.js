@@ -4,7 +4,24 @@ let isRecording = false;
 let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
 let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic")
-let lastFillerNum = null; // Tracks the last played filler to prevent back-to-back repeats
+
+// --- Shuffle Pool Logic for Fillers 1 through 8 ---
+let fillerPool = [];
+
+function getNextFillerNum() {
+    if (fillerPool.length === 0) {
+        // Create an array of numbers 1 through 8
+        fillerPool = [1, 2, 3, 4, 5, 6, 7, 8];
+        // Fisher-Yates Shuffle algorithm to randomize the pool
+        for (let i = fillerPool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [fillerPool[i], fillerPool[j]] = [fillerPool[j], fillerPool[i]];
+        }
+        console.log("[DR. LEON] Filler pool reshuffled:", fillerPool);
+    }
+    // Pull the next filler number from the front of the shuffled pool
+    return fillerPool.shift();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
@@ -35,16 +52,10 @@ function setupVoiceToggle() {
     });
 }
 
-// Play an instant local filler sound, varying the selection and preventing back-to-back repeats
+// Play an instant local filler sound, pulling from the non-repeating 1–8 pool
 function playInstantFiller() {
     return new Promise((resolve) => {
-        let fillerNum;
-        do {
-            fillerNum = Math.floor(Math.random() * 3) + 1; // Random number 1, 2, or 3
-        } while (fillerNum === lastFillerNum); // Pick again if it matches the previous one
-
-        lastFillerNum = fillerNum;
-
+        const fillerNum = getNextFillerNum();
         const suffix = (currentVoiceEngine === "elevenlabs") ? "leon" : "generic";
         const fillerSrc = `audio/filler${fillerNum}_${suffix}.mp3`;
 
@@ -263,7 +274,7 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
-    // 1. Instantly trigger the local filler sound with anti-repeat variation
+    // 1. Instantly trigger the local filler sound with shuffled pool variation[cite: 1]
     const fillerPromise = playInstantFiller();
 
     console.log("[DR. LEON] Fetching background response for:", query);
