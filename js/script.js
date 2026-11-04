@@ -34,41 +34,69 @@ function setupVoiceToggle() {
     });
 }
 
-// Play an instant local filler sound based on the active voice engine (generic vs leon)
+// Play an instant local filler sound and return a Promise that resolves when it finishes 100%
 function playInstantFiller() {
-    const fillerNum = Math.floor(Math.random() * 3) + 1; // Random number 1, 2, or 3
-    const suffix = (currentVoiceEngine === "elevenlabs") ? "leon" : "generic";
-    const fillerSrc = `audio/filler${fillerNum}_${suffix}.mp3`;
+    return new Promise((resolve) => {
+        const fillerNum = Math.floor(Math.random() * 3) + 1; // Random number 1, 2, or 3
+        const suffix = (currentVoiceEngine === "elevenlabs") ? "leon" : "generic";
+        const fillerSrc = `audio/filler${fillerNum}_${suffix}.mp3`;
 
-    if (window.currentAudio) {
-        window.currentAudio.pause();
-    }
+        if (window.currentAudio) {
+            window.currentAudio.pause();
+        }
 
-    console.log("[DR. LEON] Playing instant filler:", fillerSrc);
-    window.currentAudio = new Audio(fillerSrc);
-    window.currentAudio.play().catch(err => {
-        console.warn("[DR. LEON] Filler playback prevented by browser policy:", err);
+        console.log("[DR. LEON] Playing instant filler:", fillerSrc);
+        window.currentAudio = new Audio(fillerSrc);
+        
+        // Ensure the main answer never cuts off the filler early
+        window.currentAudio.onended = () => {
+            resolve();
+        };
+
+        window.currentAudio.onerror = (err) => {
+            console.warn("[DR. LEON] Filler playback prevented or failed:", err);
+            resolve(); // Resolve anyway so the main answer can proceed if audio fails
+        };
+
+        window.currentAudio.play().catch(err => {
+            console.warn("[DR. LEON] Filler autoplay restricted by browser policy:", err);
+            resolve();
+        });
     });
 }
 
-// Play the real backend audio stream once it arrives
-function playAudioStream(base64Audio) {
+// Queue / Play the real backend audio stream only AFTER the filler finishes
+function queueAudioStream(base64Audio) {
     if (!base64Audio) {
         console.error("[DR. LEON ERROR] No base64 audio returned!");
         return;
     }
 
-    if (window.currentAudio) {
-        window.currentAudio.pause();
-        window.currentAudio = null;
-    }
+    console.log("[DR. LEON] Main response audio ready. Waiting for filler to complete...");
 
-    console.log("[DR. LEON] Swapping to main response audio stream.");
-    const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
-    window.currentAudio = new Audio(audioUrl);
-    window.currentAudio.play().catch(err => {
-        console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
-    });
+    // Attach to window so stopAudioBtn can still pause it anytime
+    const playMain = () => {
+        if (window.currentAudio && window.currentAudio.paused && window.currentAudio.src.startsWith('data:audio')) {
+            return; // Already playing
+        }
+        console.log("[DR. LEON] Swapping to main response audio stream.");
+        const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
+        window.currentAudio = new Audio(audioUrl);
+        window.currentAudio.play().catch(err => {
+            console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
+        });
+    };
+
+    // If a filler is currently playing, hook into its completion. Otherwise play immediately.
+    if (window.currentAudio && !window.currentAudio.ended) {
+        const existingOnEnded = window.currentAudio.onended;
+        window.currentAudio.onended = () => {
+            if (typeof existingOnEnded === 'function') existingOnEnded();
+            playMain();
+        };
+    } else {
+        playMain();
+    }
 }
 
 function setupNetlifyMicrophone() {
@@ -220,7 +248,7 @@ function bindTopicPills() {
     });
 }
 
-// Process Query: Instantly plays matching local filler, fetches response in background, then plays main audio
+// Process Query: Instantly plays filler in parallel while fetching background response, then queues main audio cleanly
 async function processUserQuery(query, isFollowUp = false) {
     if (!isFollowUp) {
         hasAskedFirstQuestion = true;
@@ -230,8 +258,8 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
-    // 1. INSTANT PERCEIVED LATENCY CHEAT: Play matching local voice filler immediately!
-    playInstantFiller();
+    // 1. Instantly trigger the local filler sound
+    const fillerPromise = playInstantFiller();
 
     console.log("[DR. LEON] Fetching background response for:", query);
 
@@ -250,8 +278,11 @@ async function processUserQuery(query, isFollowUp = false) {
             const data = await response.json();
             console.log("[DR. LEON] Background response received.");
             
-            // 2. Seamlessly swap to the real response audio once it arrives from the backend
-            playAudioStream(data.audio);
+            // 2. Wait for the filler to finish 100% before allowing the main audio to trigger
+            await fillerPromise;
+
+            // 3. Seamlessly play the real response audio
+            queueAudioStream(data.audio);
             return;
         } else {
             console.error("[DR. LEON ERROR] Server returned status:", response.status);
