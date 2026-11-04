@@ -45,11 +45,12 @@
             <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
         </section>
 
-        <!-- PANE 3: Avatar Pane -->
+<!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
                 <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
-                <audio id="simli-audio" autoplay playsinline style="display: none;"></audio>
+                <!-- FIXED: Removed display: none so the browser's media pipeline keeps the audio active -->
+                <audio id="simli-audio" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></audio>
                 <div class="avatar-glow"></div>
             </div>
         </section>
