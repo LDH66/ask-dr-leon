@@ -65,13 +65,14 @@ exports.handler = async function (event) {
 
     // 2. Synthesize audio
     if (useFishAudio) {
-      console.log("[FISH AUDIO] Requesting TTS for model:", FISH_VOICE_ID);
+      console.log("[FISH AUDIO] Sending request for model:", FISH_VOICE_ID);
       const ttsResponse = await fetch("https://api.fish.audio/v1/tts", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${process.env.FISH_AUDIO_API_KEY}`,
           "Content-Type": "application/json",
-          "Accept": "audio/mp3"
+          "Accept": "audio/mp3",
+          "model": "s2.1-pro" // Required by Fish Audio API
         },
         body: JSON.stringify({
           text: drLeonReply,
@@ -83,7 +84,7 @@ exports.handler = async function (event) {
       if (ttsResponse.ok) {
         const arrayBuffer = await ttsResponse.arrayBuffer();
         base64Audio = Buffer.from(arrayBuffer).toString("base64");
-        console.log("[FISH AUDIO] Success! Audio buffer converted to base64.");
+        console.log("[FISH AUDIO] Audio generated successfully!");
       } else {
         const errText = await ttsResponse.text();
         console.error("Fish Audio TTS Error Status:", ttsResponse.status, errText);
