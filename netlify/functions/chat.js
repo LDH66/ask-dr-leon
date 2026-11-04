@@ -38,7 +38,7 @@ export async function handler(event, context) {
     const replyText = chatCompletion.choices[0].message.content;
     console.log(`[CHAT FUNCTION] Generated reply: "${replyText}"`);
 
-    // 2. Always generate audio using Fish Audio Personal Voice Clone
+    // 2. Generate audio using your specific Fish Audio Cloned Voice ID
     const base64Audio = await generateFishAudio(replyText);
 
     return {
@@ -61,10 +61,12 @@ export async function handler(event, context) {
 
 async function generateFishAudio(text) {
   const fishApiKey = process.env.FISH_AUDIO_API_KEY;
-  const fishReferenceId = process.env.FISH_AUDIO_MODEL_ID || process.env.FISH_AUDIO_REFERENCE_ID;
+  
+  // Your exact personal voice model ID hardcoded here
+  const voiceModelId = "68e3fa24abdc47609409bb667b558a59";
 
   if (!fishApiKey) {
-    throw new Error("Missing FISH_AUDIO_API_KEY environment variable.");
+    throw new Error("Missing FISH_AUDIO_API_KEY environment variable in Netlify.");
   }
 
   try {
@@ -72,12 +74,11 @@ async function generateFishAudio(text) {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${fishApiKey}`,
-        "Content-Type": "application/json",
-        "Model": "tts-1"
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         text: text,
-        reference_id: fishReferenceId || undefined,
+        reference_id: voiceModelId, // Bound directly to your cloned voice
         format: "mp3",
         normalize: true
       })
@@ -86,7 +87,7 @@ async function generateFishAudio(text) {
     if (!response.ok) {
       const errText = await response.text();
       console.error("[FISH AUDIO API ERROR]", response.status, errText);
-      throw new Error(`Fish Audio failed with status ${response.status}`);
+      throw new Error(`Fish Audio failed with status ${response.status}: ${errText}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
