@@ -8,10 +8,10 @@ let lastAskedQuery = "What is this site about and what is its core purpose?";
 let currentVoiceEngine = "generic"; 
 
 let simliClient = null;
+let audioCtx = null;
 
 async function initSimli() {
   try {
-    // 1. Fetch token from your Netlify function
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
     
@@ -28,14 +28,12 @@ async function initSimli() {
       return;
     }
 
-    // 2. Instantiate using the official Simli SDK signature:
-    // new SimliClient(token, videoElement, audioElement, iceServers, logLevel)
     simliClient = new SimliClient(
       data.session_token,
       videoElement,
       audioElement,
-      null,           // null for default LiveKit mode
-      LogLevel.INFO   // Logging level
+      null,           
+      LogLevel.INFO   
     );
 
     simliClient.on("start", () => {
@@ -46,7 +44,6 @@ async function initSimli() {
       console.error("[SIMLI ERROR] Runtime error event:", err);
     });
 
-    // 3. Start the client session
     await simliClient.start();
     console.log("[SIMLI] client.start() resolved successfully.");
 
@@ -116,17 +113,40 @@ function playInstantFiller() {
     });
 }
 
+// Helper to decode base64 audio into raw PCM stream for Simli Lip-Sync
+async function sendAudioToSimli(base64Audio) {
+    if (!simliClient) return;
+    try {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        }
+        const binaryString = atob(base64Audio);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
+        const channelData = audioBuffer.getChannelData(0); // Mono PCM float data
+        
+        // Convert float32 PCM to Int16 PCM bytes required by Simli lip-sync
+        const pcm16 = new Int16Array(channelData.length);
+        for (let i = 0; i < channelData.length; i++) {
+            let s = Math.max(-1, Math.min(1, channelData[i]));
+            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        
+        simliClient.sendAudioData(new Uint8Array(pcm16.buffer));
+    } catch (e) {
+        console.warn("[SIMLI] PCM conversion fallback:", e);
+    }
+}
+
 function queueAudioStream(base64Audio) {
     if (!base64Audio) {
         console.error("[DR. LEON ERROR] No base64 audio returned!");
         return;
-    }
-
-    const binaryString = atob(base64Audio);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
     }
 
     const playMain = () => {
@@ -137,10 +157,8 @@ function queueAudioStream(base64Audio) {
         window.currentAudio = new Audio(audioUrl);
         
         window.currentAudio.play().then(() => {
-            // Send PCM / audio stream bytes into Simli client for lip synchronization
-            if (simliClient) {
-                simliClient.sendAudioData(bytes);
-            }
+            // Trigger raw PCM lip-sync buffer conversion and send to Simli
+            sendAudioToSimli(base64Audio);
         }).catch(err => {
             console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
         });
