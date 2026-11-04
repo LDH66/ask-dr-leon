@@ -56,7 +56,7 @@ async function initSimli() {
   }
 }
 
-// --- Shuffle Pool Logic for Fillers 1 through 8 ---
+// --- Shuffle Pool Logic for Fillers (Kept in codebase, unused per preference) ---
 let fillerPool = [];
 
 function getNextFillerNum() {
@@ -313,8 +313,6 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
-    const fillerPromise = playInstantFiller();
-
     try {
         const response = await fetch('/.netlify/functions/chat', {
             method: 'POST',
@@ -328,7 +326,7 @@ async function processUserQuery(query, isFollowUp = false) {
 
         if (response.ok) {
             const data = await response.json();
-            await fillerPromise;
+            // Fillers bypassed for instant response speed
             queueAudioStream(data.audio);
             return;
         } else {
@@ -362,7 +360,3 @@ function updateRelatedTopics(queryKey) {
             <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
         `;
     }
-
-    topicPillsContainer.innerHTML = newPillsHTML;
-    bindTopicPills(); 
-}
