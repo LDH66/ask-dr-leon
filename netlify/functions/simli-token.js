@@ -5,7 +5,15 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const apiKey = process.env.SIMLI_API_KEY || "kdaiuahahvdm2sib2rzqm";
+  const apiKey = process.env.SIMLI_API_KEY;
+
+  if (!apiKey) {
+    console.error("SIMLI_API_KEY is missing from environment variables.");
+    return { 
+      statusCode: 500, 
+      body: JSON.stringify({ error: "Server configuration error: SIMLI_API_KEY is not set." }) 
+    };
+  }
 
   try {
     const response = await fetch("https://api.simli.ai/compose/token", {
@@ -29,7 +37,6 @@ exports.handler = async function (event) {
 
     const data = await response.json();
     
-    // Ensure we return the session_token field expected by the client
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
