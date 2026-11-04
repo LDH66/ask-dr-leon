@@ -65,6 +65,7 @@ exports.handler = async function (event) {
 
     // 2. Synthesize audio
     if (useFishAudio) {
+      console.log("[FISH AUDIO] Requesting TTS for model:", FISH_VOICE_ID);
       const ttsResponse = await fetch("https://api.fish.audio/v1/tts", {
         method: "POST",
         headers: {
@@ -82,9 +83,10 @@ exports.handler = async function (event) {
       if (ttsResponse.ok) {
         const arrayBuffer = await ttsResponse.arrayBuffer();
         base64Audio = Buffer.from(arrayBuffer).toString("base64");
+        console.log("[FISH AUDIO] Success! Audio buffer converted to base64.");
       } else {
         const errText = await ttsResponse.text();
-        console.error("Fish Audio TTS Error:", errText);
+        console.error("Fish Audio TTS Error Status:", ttsResponse.status, errText);
       }
     } else {
       // Direct REST call to OpenAI Audio TTS endpoint
