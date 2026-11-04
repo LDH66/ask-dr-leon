@@ -10,6 +10,7 @@ let currentVoiceEngine = "generic";
 let simliClient = null;
 let audioCtx = null;
 let isAudioUnlocked = false;
+let currentFetchController = null; // Tracks active chat requests to cancel older ones
 
 async function initSimli() {
   if (simliClient) {
@@ -53,7 +54,6 @@ async function initSimli() {
     simliClient.on("start", () => {
       console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
       
-      // Respect browser autoplay policy: unmute only if user has interacted, otherwise let gesture listener handle it
       if (audioElement && isAudioUnlocked) {
         audioElement.muted = false;
         audioElement.volume = 1.0;
@@ -97,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupVoiceToggle();
     updateRelatedTopics(""); 
 
-    // Unlock audio context and unmute immediately on first user gesture anywhere
     const unlockAudio = () => {
         isAudioUnlocked = true;
         const audioElement = document.getElementById("simli-audio");
@@ -192,7 +191,6 @@ async function sendAudioToSimli(base64Audio) {
         
         simliClient.sendAudioData(new Uint8Array(pcm16.buffer));
 
-        // Ensure audio element is active and unmuted when playing audio chunks
         const audioElement = document.getElementById("simli-audio");
         if (audioElement) {
             audioElement.muted = false;
@@ -363,6 +361,13 @@ function bindTopicPills() {
 }
 
 async function processUserQuery(query, isFollowUp = false) {
+    // 1. Cancel any in-flight backend requests from previous rapid clicks
+    if (currentFetchController) {
+        currentFetchController.abort();
+    }
+    currentFetchController = new AbortController();
+
+    // 2. Stop current speech and avatar movement immediately so there's zero overlap
     stopCurrentSpeech();
 
     if (!isFollowUp) {
@@ -377,6 +382,7 @@ async function processUserQuery(query, isFollowUp = false) {
         const response = await fetch('/.netlify/functions/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: currentFetchController.signal, // Attach abort signal
             body: JSON.stringify({ 
                 prompt: query, 
                 isFollowUp: isFollowUp,
@@ -392,7 +398,11 @@ async function processUserQuery(query, isFollowUp = false) {
             console.error("[DR. LEON ERROR] Server returned status:", response.status);
         }
     } catch (error) {
-        console.error("[DR. LEON ERROR] Fetch error:", error);
+        if (error.name === 'AbortError') {
+            console.log("[DR. LEON] Previous request superseded by a new user query.");
+        } else {
+            console.error("[DR. LEON ERROR] Fetch error:", error);
+        }
     }
 }
 
