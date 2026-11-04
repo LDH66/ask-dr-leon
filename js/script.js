@@ -29,15 +29,12 @@ async function initSimli() {
     const data = await res.json();
     
     console.log("[SIMLI] Token response from backend:", data);
+    const sessionToken = data.session_token || data.token;
 
-    if (data.error) {
-      console.error("[SIMLI] Backend returned error:", data.error);
+    if (!sessionToken) {
+      console.error("[SIMLI] Failed to retrieve session token string from Netlify.");
       return;
     }
-
-    // Handle ICE servers array or token object response safely
-    const iceServers = Array.isArray(data) ? data : (data.iceServers || null);
-    const sessionToken = data.session_token || data.token || null;
 
     const videoElement = document.getElementById("simli-video");
     const audioElement = document.getElementById("simli-audio");
@@ -47,9 +44,8 @@ async function initSimli() {
       return;
     }
 
-    // Initialize SimliClient with proper configuration supporting ICE servers / tokens
     simliClient = new SimliClient(
-      sessionToken || { iceServers: iceServers },
+      sessionToken,
       videoElement,
       audioElement,
       null,           
@@ -273,7 +269,8 @@ function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
 
-    if (micBtn) micBtn.style.display = 'flex';
+    if (!micBtn) return; // Null safety guard prevents crashes
+    micBtn.style.display = 'flex';
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
     micBtn.addEventListener('click', async () => {
