@@ -29,7 +29,7 @@ exports.handler = async function(event, context) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                faceId: process.env.SIMLI_FACE_ID || "bf13113a-355a-4d97-8b90-4edccd1da7b2",
+                faceId: "bc1070f5-6eec-4a9e-ac5e-1ad282a06624",
                 maxSessionLength: 600,
                 maxIdleTime: 180
             })
