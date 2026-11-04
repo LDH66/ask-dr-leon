@@ -23,7 +23,7 @@
                 <div class="status-dot"></div>
                 <h1>Ask Dr. Leon</h1>
             </div>
-            <button id="voice-toggle-btn" class="voice-toggle-btn pill-btn leon-active">Video Mode</button>
+            <button id="voice-toggle-btn" class="voice-toggle-btn pill-btn leon-active">Mode: Video</button>
             <button class="menu-btn" aria-label="Menu">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
@@ -54,6 +54,10 @@
                 
                 <!-- Live Simli WebRTC Stream Elements -->
                 <video id="simli-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                
+                <!-- Default Avatar Image (Shown in Audio Mode) -->
+                <img id="default-avatar-img" src="assets/images/Default-image.jpg" alt="Dr. Leon Avatar" style="width:100%; height:100%; object-fit:cover; display:none;" />
+
                 <audio id="simli-audio" autoplay></audio>
 
                 <div class="avatar-glow"></div>
@@ -65,18 +69,18 @@
             <div class="topic-menu-label">Quick FAQ Topics</div>
             <div id="topic-pills" class="topic-pills">
                 <!-- Hardcoded FAQ Pills to guarantee visibility -->
-                <button class="pill-btn primary" data-faq-id="faq_01">What is Vibe Coding?</button>
-                <button class="pill-btn" data-faq-id="faq_02">Netlify Serverless Setup</button>
-                <button class="pill-btn" data-faq-id="faq_03">Fish Audio Cloned Voice</button>
-                <button class="pill-btn" data-faq-id="faq_04">Simli WebRTC Stream</button>
-                <button class="pill-btn" data-faq-id="faq_05">Fuse.js Fuzzy Matching</button>
-                <button class="pill-btn" data-faq-id="faq_06">Media Production Workflow</button>
+                <button class="pill-btn primary" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
+                <button class="pill-btn" data-topic="Netlify Serverless Setup">Netlify Serverless Setup</button>
+                <button class="pill-btn" data-topic="Fish Audio Cloned Voice">Fish Audio Cloned Voice</button>
+                <button class="pill-btn" data-topic="Simli WebRTC Stream">Simli WebRTC Stream</button>
+                <button class="pill-btn" data-topic="Fuse.js Fuzzy Matching">Fuse.js Fuzzy Matching</button>
+                <button class="pill-btn" data-topic="Media Production Workflow">Media Production Workflow</button>
             </div>
         </section>
 
     </div>
 
-    <!-- Main Client Application Script -->
-    <script src="js/script.js?v=7.1"></script>
+    <!-- Main Client Application Script (Loaded as ES Module) -->
+    <script type="module" src="js/script.js?v=7.2"></script>
 </body>
 </html>
