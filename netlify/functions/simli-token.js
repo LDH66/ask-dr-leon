@@ -32,7 +32,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_token: data.session_token || data.token })
+      body: JSON.stringify({ session_token: data.session_token })
     };
   } catch (err) {
     console.error("Simli Function Crash:", err);
