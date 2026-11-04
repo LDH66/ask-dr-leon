@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ask Dr. Leon </title>
+    <title>Ask Dr. Leon</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="css/style.css">
     <!-- Simli WebRTC SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/simli-client@latest/dist/simli-client.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "simli-client": "https://cdn.jsdelivr.net/npm/simli-client@latest/+esm"
+        }
+      }
+    </script>
     <!-- Fuse.js for Local Fuzzy FAQ Matching -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 </head>
@@ -23,7 +29,7 @@
                 <div class="status-dot"></div>
                 <h1>Ask Dr. Leon</h1>
             </div>
-            <button id="voice-toggle-btn" class="voice-toggle-btn pill-btn leon-active">Mode: Video</button>
+            <button id="mediaModeBtn" class="voice-toggle-btn pill-btn leon-active">Mode: Video</button>
             <button class="menu-btn" aria-label="Menu">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
@@ -32,18 +38,18 @@
         <!-- PANE 2: Input Pane -->
         <section class="input-pane">
             <div class="input-form-wrapper">
-                <button id="mic-btn" class="mic-btn" title="Voice Input">
+                <button id="micBtn" class="mic-btn" title="Voice Input">
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18.5V23M8 23h8"></path></svg>
                 </button>
-                <input type="text" id="prompt-input" placeholder="Ask about Vibe Coding, assets, or media workflows..." />
-                <button id="stop-audio-btn" class="stop-audio-btn" title="Stop Audio" style="display:none;">
+                <input type="text" id="userInput" placeholder="Ask about Vibe Coding, assets, or media workflows..." />
+                <button id="stopAudioBtn" class="stop-audio-btn" title="Stop Audio" style="display:none;">
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
                 </button>
-                <button id="submit-btn" class="submit-btn" title="Send">
+                <button id="submitBtn" class="submit-btn" title="Send">
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
                 </button>
             </div>
-            <div id="listening-indicator" class="listening-indicator" style="display:none;">Listening to your microphone...</div>
+            <div id="listeningIndicator" class="listening-indicator" style="display:none;">Listening to your microphone...</div>
         </section>
 
        <!-- PANE 3: Avatar Pane -->
@@ -68,7 +74,7 @@
         <section class="graphics-pane">
             <div class="topic-box-wrapper">
                 <div class="topic-menu-label">Quick FAQ Topics</div>
-                <div id="topic-pills" class="topic-pills">
+                <div id="topicPills" class="topic-pills">
                     <!-- Dynamically populated via script.js -->
                 </div>
             </div>
