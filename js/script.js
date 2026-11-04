@@ -42,6 +42,13 @@ async function initSimli() {
 
     simliClient.on("start", () => {
       console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
+      
+      // Ensure audio element is active, unmuted, and playing LiveKit track
+      if (audioElement) {
+        audioElement.muted = false;
+        audioElement.volume = 1.0;
+        audioElement.play().catch(e => console.warn("[SIMLI] Audio auto-play restriction:", e));
+      }
     });
 
     simliClient.on("error", (err) => {
@@ -56,7 +63,7 @@ async function initSimli() {
   }
 }
 
-// --- Shuffle Pool Logic for Fillers (Kept in codebase, unused per preference) ---
+// --- Shuffle Pool Logic for Fillers (Retained, bypassed for speed) ---
 let fillerPool = [];
 
 function getNextFillerNum() {
@@ -117,7 +124,7 @@ function playInstantFiller() {
     });
 }
 
-// Helper to decode base64 audio into raw PCM16 stream for Simli Lip-Sync & Playback
+// Helper to decode base64 audio into raw PCM16 stream for Simli Lip-Sync
 async function sendAudioToSimli(base64Audio) {
     if (!simliClient) return;
     try {
