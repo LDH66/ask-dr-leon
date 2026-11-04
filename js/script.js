@@ -9,10 +9,26 @@ let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic"
 let simliClient = null;
 const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
 
-async function initSimli() {
-  if (typeof SimliClient === 'undefined') {
-    console.error("[SIMLI ERROR] SimliClient UMD bundle not loaded.");
-    return;
+function getSimliConstructor() {
+    if (typeof SimliClient !== 'undefined') return SimliClient;
+    if (window.SimliClient) return window.SimliClient;
+    if (window.Simli && window.Simli.SimliClient) return window.Simli.SimliClient;
+    if (window.Simli) return window.Simli;
+    return null;
+}
+
+async function initSimli(retries = 10) {
+  const SimliConstructor = getSimliConstructor();
+
+  if (!SimliConstructor) {
+    if (retries > 0) {
+      console.warn(`[SIMLI] SDK loading... retries left: ${retries}`);
+      setTimeout(() => initSimli(retries - 1), 300);
+      return;
+    } else {
+      console.error("[SIMLI ERROR] SimliClient SDK failed to load from unpkg.");
+      return;
+    }
   }
 
   try {
@@ -24,7 +40,7 @@ async function initSimli() {
       return;
     }
 
-    simliClient = new SimliClient();
+    simliClient = new SimliConstructor();
     
     const simliConfig = {
       apiKey: "", 
@@ -136,7 +152,6 @@ function queueAudioStream(base64Audio) {
         window.currentAudio = new Audio(audioUrl);
         
         window.currentAudio.play().then(() => {
-            // Send audio stream buffer to Simli WebRTC client for lip-syncing
             if (simliClient) {
                 simliClient.sendAudioData(bytes);
             }
