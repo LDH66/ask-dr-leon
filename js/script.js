@@ -91,7 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioElement) {
             audioElement.muted = false;
             audioElement.volume = 1.0;
-            audioElement.play().catch(() => {});
+            audioElement.play().then(() => {
+                console.log("[AUDIO] iOS Safari audio element unlocked successfully.");
+            }).catch(e => {
+                console.warn("[AUDIO] Unlock play warning:", e);
+            });
         }
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
@@ -186,6 +190,13 @@ function stopCurrentSpeech() {
 async function handleAudioPlayback(base64Audio) {
     if (!base64Audio) return;
 
+    const audioElement = document.getElementById("simli-audio");
+    if (audioElement) {
+        audioElement.muted = false;
+        audioElement.volume = 1.0;
+        audioElement.play().catch(() => {}); // Force iOS to wake up the audio track
+    }
+
     if (currentMode === "video" && simliClient) {
         // Video Mode: Stream audio chunks into Simli for lip-syncing
         try {
@@ -220,10 +231,8 @@ async function handleAudioPlayback(base64Audio) {
                 simliClient.sendAudioData(audioChunkData);
             }
 
-            const audioElement = document.getElementById("simli-audio");
             if (audioElement) {
-                audioElement.muted = false;
-                audioElement.play().catch(() => {});
+                audioElement.play().catch(e => console.warn("[SIMLI] Audio element play retry:", e));
             }
         } catch (e) {
             console.warn("[SIMLI] PCM conversion fallback:", e);
