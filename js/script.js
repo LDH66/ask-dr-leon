@@ -7,15 +7,14 @@ let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic"
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
-    console.log("[DR. LEON] OpenAI Audio Pipeline Active v2.0 🚀");
+    console.log("[DR. LEON] Audio Pipeline with Local Fillers Active 🚀");
     console.log("--------------------------------------------------");
     setupNetlifyMicrophone();
     setupUIHandlers();
     setupVoiceToggle();
-    updateRelatedTopics(""); // Forces the correct buttons to render instantly on page load
+    updateRelatedTopics(""); 
 });
 
-// Setup Voice Engine Toggle Button (Generic [OpenAI] vs Leon [ElevenLabs])
 function setupVoiceToggle() {
     const voiceToggleBtn = document.getElementById('voiceToggleBtn');
     if (!voiceToggleBtn) return;
@@ -35,10 +34,27 @@ function setupVoiceToggle() {
     });
 }
 
-// Universal MP3 Audio Stream Player (Plays OpenAI / ElevenLabs Base64 MP3 stream)
+// Play an instant local filler sound based on the active voice engine (generic vs leon)
+function playInstantFiller() {
+    const fillerNum = Math.floor(Math.random() * 3) + 1; // Random number 1, 2, or 3
+    const suffix = (currentVoiceEngine === "elevenlabs") ? "leon" : "generic";
+    const fillerSrc = `audio/filler${fillerNum}_${suffix}.mp3`;
+
+    if (window.currentAudio) {
+        window.currentAudio.pause();
+    }
+
+    console.log("[DR. LEON] Playing instant filler:", fillerSrc);
+    window.currentAudio = new Audio(fillerSrc);
+    window.currentAudio.play().catch(err => {
+        console.warn("[DR. LEON] Filler playback prevented by browser policy:", err);
+    });
+}
+
+// Play the real backend audio stream once it arrives
 function playAudioStream(base64Audio) {
     if (!base64Audio) {
-        console.error("[DR. LEON ERROR] No base64 audio returned from backend!");
+        console.error("[DR. LEON ERROR] No base64 audio returned!");
         return;
     }
 
@@ -47,16 +63,14 @@ function playAudioStream(base64Audio) {
         window.currentAudio = null;
     }
 
-    console.log("[DR. LEON] Playing audio stream, length of base64:", base64Audio.length);
+    console.log("[DR. LEON] Swapping to main response audio stream.");
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
     window.currentAudio = new Audio(audioUrl);
-    
     window.currentAudio.play().catch(err => {
-        console.warn("[DR. LEON WARNING] Audio playback restricted by browser gesture limits:", err);
+        console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
     });
 }
 
-// Setup Microphone Recording
 function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
@@ -113,8 +127,8 @@ function setupNetlifyMicrophone() {
                 }
 
             } catch (err) {
-                console.warn("Microphone access error:", err);
-                alert("Microphone access denied or unsupported. Please check device permissions.");
+                console.warn("Microphone error:", err);
+                alert("Microphone access denied or unsupported.");
             }
         } else {
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -126,7 +140,6 @@ function setupNetlifyMicrophone() {
     });
 }
 
-// Transcribe Voice Input via Whisper Endpoint
 async function sendAudioToBackend(audioBlob) {
     try {
         const reader = new FileReader();
@@ -149,7 +162,6 @@ async function sendAudioToBackend(audioBlob) {
     }
 }
 
-// UI Setup
 function setupUIHandlers() {
     const submitBtn = document.getElementById('submitBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
@@ -208,7 +220,7 @@ function bindTopicPills() {
     });
 }
 
-// Process Query and Play Backend Stream
+// Process Query: Instantly plays matching local filler, fetches response in background, then plays main audio
 async function processUserQuery(query, isFollowUp = false) {
     if (!isFollowUp) {
         hasAskedFirstQuestion = true;
@@ -218,7 +230,10 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
-    console.log("[DR. LEON] Sending query to backend:", query, "| Engine:", currentVoiceEngine);
+    // 1. INSTANT PERCEIVED LATENCY CHEAT: Play matching local voice filler immediately!
+    playInstantFiller();
+
+    console.log("[DR. LEON] Fetching background response for:", query);
 
     try {
         const response = await fetch('/.netlify/functions/chat', {
@@ -233,18 +248,19 @@ async function processUserQuery(query, isFollowUp = false) {
 
         if (response.ok) {
             const data = await response.json();
-            console.log("[DR. LEON] Received response text:", data.text);
+            console.log("[DR. LEON] Background response received.");
+            
+            // 2. Seamlessly swap to the real response audio once it arrives from the backend
             playAudioStream(data.audio);
             return;
         } else {
-            console.error("[DR. LEON ERROR] Netlify function returned status:", response.status);
+            console.error("[DR. LEON ERROR] Server returned status:", response.status);
         }
     } catch (error) {
-        console.error("[DR. LEON ERROR] Netlify chat fetch error:", error);
+        console.error("[DR. LEON ERROR] Fetch error:", error);
     }
 }
 
-// Dynamic Suggestion Pills
 function updateRelatedTopics(queryKey) {
     const topicPillsContainer = document.getElementById('topicPills');
     if (!topicPillsContainer) return;
