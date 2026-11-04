@@ -1,5 +1,4 @@
 exports.handler = async function(event, context) {
-    // CORS headers to prevent cross-origin issues
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -7,47 +6,47 @@ exports.handler = async function(event, context) {
         'Content-Type': 'application/json'
     };
 
-    // Handle browser preflight OPTIONS request
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: ''
-        };
+        return { statusCode: 200, headers, body: '' };
     }
 
     try {
         const apiKey = process.env.SIMLI_API_KEY;
 
         if (!apiKey) {
-            console.error('[SIMLI ERROR] SIMLI_API_KEY is not set in Netlify environment variables.');
+            console.error('[SIMLI ERROR] SIMLI_API_KEY environment variable is missing.');
             return {
                 statusCode: 500,
                 headers,
-                body: JSON.stringify({ error: 'Server configuration error: SIMLI_API_KEY missing.' })
+                body: JSON.stringify({ error: 'SIMLI_API_KEY is not configured on Netlify.' })
             };
         }
 
-        // Request token/session from Simli API
-        const response = await fetch('https://api.simli.ai/get-token', {
-            method: 'POST',
+        const response = await fetch('https://api.simli.ai/compose/ice', {
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ apiKey: apiKey })
+                'x-simli-api-key': apiKey,
+                'Content-Type': 'application/json'
+            }
         });
 
+        const responseText = await response.text();
+
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[SIMLI ERROR] API responded with status ${response.status}: ${errorText}`);
+            console.error(`[SIMLI API ERROR] Status ${response.status}: ${responseText}`);
             return {
                 statusCode: response.status,
                 headers,
-                body: JSON.stringify({ error: `Simli API error: ${errorText}` })
+                body: JSON.stringify({ error: `Simli API error (${response.status}): ${responseText}` })
             };
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            data = { raw: responseText };
+        }
 
         return {
             statusCode: 200,
