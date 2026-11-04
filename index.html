@@ -11,17 +11,13 @@
 
     <div class="app-container">
         
-        <!-- PANE 1: Title Pane -->
+        <!-- PANE 1: Title Pane (Subtitle removed) -->
         <header class="pane title-pane">
             <div class="logo-area">
                 <span class="status-dot"></span>
                 <h1>Ask Dr Leon</h1>
             </div>
-            <div class="subtitle" style="background: transparent !important; border: none !important; padding: 0 !important; box-shadow: none !important; pointer-events: none; font-weight: 500; appearance: none; -webkit-appearance: none;">
-                Vibe Coding
-            </div>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <!-- Mode Toggle Button replacing old voice toggle -->
                 <button id="mediaModeBtn" class="voice-toggle-btn leon-active" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Mode: Video</button>
                 <button class="menu-btn" aria-label="Menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -49,33 +45,35 @@
         <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
+                <!-- Live Simli Stream -->
                 <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
-                <img id="default-avatar-img" src="images/Default-image.jpg" alt="Dr. Leon" style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;">
                 
-                <!-- iOS-friendly audio element styling -->
+                <!-- Pre-recorded FAQ Video -->
+                <video id="faq-video" playsinline webkit-playsinline style="width: 100%; height: 100%; object-fit: cover; z-index: 3; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;"></video>
+                
+                <!-- Audio Mode Still Image -->
+                <img id="default-avatar-img" src="assets/images/Default-image.jpg" alt="Dr. Leon" style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;">
+                
                 <audio id="simli-audio" autoplay playsinline controls style="position: absolute; bottom: 10px; left: 10px; width: 40px; height: 20px; opacity: 0.1; z-index: 5;"></audio>
                 
                 <div class="avatar-glow"></div>
             </div>
         </section>
 
-        <!-- PANE 4: Graphics Pane -->
+        <!-- PANE 4: Graphics Pane (Updated Header & 20 Abbreviated FAQ Buttons) -->
         <section class="pane graphics-pane" id="graphicsPane">
             <div class="topic-box-wrapper">
-                <div class="topic-menu-label">Related Topics & Studio Options</div>
+                <div class="topic-menu-label">Frequently Asked Questions</div>
                 <div class="topic-pills" id="topicPills">
-                    <button class="pill-btn primary" data-topic="What is HTML?">What is HTML?</button>
-                    <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
-                    <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
-                    <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
-                    <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
-                    <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
+                    <!-- Populated dynamically or statically from faqs.json -->
                 </div>
             </div>
         </section>
 
     </div>
 
-    <script type="module" src="js/script.js?v=6.0"></script>
+    <!-- Fuse.js for smart fuzzy matching -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <script type="module" src="js/script.js?v=7.0"></script>
 </body>
 </html>
