@@ -3,34 +3,12 @@ let audioChunks = [];
 let isRecording = false;
 let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
-let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic")
+let currentVoiceEngine = "generic"; 
 
-// --- Simli Avatar Client Instance ---
-let simliClient = null;
-const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
+let peerConnection = null;
+let simliDataChannel = null;
 
-function getSimliConstructor() {
-    if (typeof SimliClient !== 'undefined') return SimliClient;
-    if (window.SimliClient) return window.SimliClient;
-    if (window.Simli && window.Simli.SimliClient) return window.Simli.SimliClient;
-    if (window.Simli) return window.Simli;
-    return null;
-}
-
-async function initSimli(retries = 10) {
-  const SimliConstructor = getSimliConstructor();
-
-  if (!SimliConstructor) {
-    if (retries > 0) {
-      console.warn(`[SIMLI] SDK loading... retries left: ${retries}`);
-      setTimeout(() => initSimli(retries - 1), 300);
-      return;
-    } else {
-      console.error("[SIMLI ERROR] SimliClient SDK failed to load from unpkg.");
-      return;
-    }
-  }
-
+async function initSimli() {
   try {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
@@ -40,24 +18,51 @@ async function initSimli(retries = 10) {
       return;
     }
 
-    simliClient = new SimliConstructor();
-    
-    const simliConfig = {
-      apiKey: "", 
-      session_token: data.session_token,
-      videoRef: document.getElementById("simli-video"),
-      audioRef: document.getElementById("simli-audio"),
-      FaceID: SIMLI_FACE_ID,
-      handleSilence: true,
-      maxSessionLength: 600,
-      maxIdleTime: 180,
+    console.log("[SIMLI] Got session token, establishing WebRTC connection...");
+
+    // Create RTCPeerConnection for Simli stream
+    peerConnection = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+
+    peerConnection.ontrack = (event) => {
+      const videoElement = document.getElementById("simli-video");
+      if (videoElement && event.streams && event.streams[0]) {
+        videoElement.srcObject = event.streams[0];
+        console.log("[SIMLI] WebRTC video track attached successfully! 🚀");
+      }
     };
 
-    simliClient.Initialize(simliConfig);
-    simliClient.start();
-    console.log("[SIMLI] WebRTC Avatar stream initialized successfully!");
+    // Create Data Channel for sending audio chunks to Simli for lip-sync
+    simliDataChannel = peerConnection.createDataChannel("simli-audio-channel");
+
+    // Start WebRTC negotiation with Simli
+    const offer = await peerConnection.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true
+    });
+    await peerConnection.setLocalDescription(offer);
+
+    // Send offer to Simli WebRTC gateway using the session token
+    const webrtcRes = await fetch(`https://api.simli.ai/start-webrtc`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${data.session_token}`
+      },
+      body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
+    });
+
+    const answer = await webrtcRes.json();
+    if (answer && answer.sdp) {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log("[SIMLI] WebRTC handshake complete!");
+    } else {
+      console.error("[SIMLI ERROR] WebRTC answer invalid:", answer);
+    }
+
   } catch (err) {
-    console.error("[SIMLI ERROR] Initialization failed:", err);
+    console.error("[SIMLI ERROR] WebRTC initialization failed:", err);
   }
 }
 
@@ -78,7 +83,7 @@ function getNextFillerNum() {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
-    console.log("[DR. LEON] Audio Pipeline & Simli WebRTC Active 🚀");
+    console.log("[DR. LEON] Native WebRTC Pipeline Active 🚀");
     console.log("--------------------------------------------------");
     initSimli();
     setupNetlifyMicrophone();
@@ -152,8 +157,8 @@ function queueAudioStream(base64Audio) {
         window.currentAudio = new Audio(audioUrl);
         
         window.currentAudio.play().then(() => {
-            if (simliClient) {
-                simliClient.sendAudioData(bytes);
+            if (simliDataChannel && simliDataChannel.readyState === 'open') {
+                simliDataChannel.send(bytes);
             }
         }).catch(err => {
             console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
@@ -376,6 +381,7 @@ function updateRelatedTopics(queryKey) {
             <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
             <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
             <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
+            <button class="pill-btn" data-topic="What is HTML?">What is HTML?</button>
         `;
     }
 
