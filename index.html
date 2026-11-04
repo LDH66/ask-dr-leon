@@ -2,78 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ask Dr Leon</title>
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Dr. Leon | Vibe Coding AI Platform</title>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Simli WebRTC SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/simli-client@latest/dist/simli-client.js"></script>
+    <!-- Fuse.js for Local Fuzzy FAQ Matching -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 </head>
 <body>
 
     <div class="app-container">
         
-        <!-- PANE 1: Title Pane (Subtitle removed) -->
-        <header class="pane title-pane">
+        <!-- PANE 1: Title Pane -->
+        <header class="title-pane">
             <div class="logo-area">
-                <span class="status-dot"></span>
-                <h1>Ask Dr Leon</h1>
+                <div class="status-dot"></div>
+                <h1>Ask Dr. Leon</h1>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <button id="mediaModeBtn" class="voice-toggle-btn leon-active" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Mode: Video</button>
-                <button class="menu-btn" aria-label="Menu">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-                </button>
-            </div>
+            <button id="voice-toggle-btn" class="voice-toggle-btn pill-btn leon-active">Video Mode</button>
+            <button class="menu-btn" aria-label="Menu">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
         </header>
 
         <!-- PANE 2: Input Pane -->
-        <section class="pane input-pane">
+        <section class="input-pane">
             <div class="input-form-wrapper">
-                <button id="micBtn" class="mic-btn" aria-label="Voice Input" title="Speak your question">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                <button id="mic-btn" class="mic-btn" title="Voice Input">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18.5V23M8 23h8"></path></svg>
                 </button>
-                <input type="text" id="userInput" placeholder="Ask Dr Leon a question..." autocomplete="off">
-                <button id="stopAudioBtn" class="stop-audio-btn" aria-label="Stop Speaking" title="Stop Dr Leon speaking">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                <input type="text" id="prompt-input" placeholder="Ask about Vibe Coding, assets, or media workflows..." />
+                <button id="stop-audio-btn" class="stop-audio-btn" title="Stop Audio" style="display:none;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
                 </button>
-                <button id="submitBtn" class="submit-btn" aria-label="Submit">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <button id="submit-btn" class="submit-btn" title="Send">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
                 </button>
             </div>
-            <div class="listening-indicator" id="listeningIndicator" style="display: none;">Listening... Speak now</div>
+            <div id="listening-indicator" class="listening-indicator" style="display:none;">Listening to your microphone...</div>
         </section>
 
         <!-- PANE 3: Avatar Pane -->
-        <section class="pane avatar-pane">
+        <section class="avatar-pane">
             <div class="avatar-wrapper">
-                <!-- Live Simli Stream -->
-                <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
+                <!-- Static FAQ Video Player (Used for instant matching) -->
+                <video id="faq-video" playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover; display:none;"></video>
                 
-                <!-- Pre-recorded FAQ Video -->
-                <video id="faq-video" playsinline webkit-playsinline style="width: 100%; height: 100%; object-fit: cover; z-index: 3; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;"></video>
-                
-                <!-- Audio Mode Still Image -->
-                <img id="default-avatar-img" src="assets/images/Default-image.jpg" alt="Dr. Leon" style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;">
-                
-                <audio id="simli-audio" autoplay playsinline controls style="position: absolute; bottom: 10px; left: 10px; width: 40px; height: 20px; opacity: 0.1; z-index: 5;"></audio>
-                
+                <!-- Live Simli WebRTC Stream Elements (Used for fallback / custom chat) -->
+                <video id="simli-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                <audio id="simli-audio" autoplay></audio>
+
                 <div class="avatar-glow"></div>
             </div>
         </section>
 
-        <!-- PANE 4: Graphics Pane (Updated Header & 20 Abbreviated FAQ Buttons) -->
-        <section class="pane graphics-pane" id="graphicsPane">
-            <div class="topic-box-wrapper">
-                <div class="topic-menu-label">Frequently Asked Questions</div>
-                <div class="topic-pills" id="topicPills">
-                    <!-- Populated dynamically or statically from faqs.json -->
-                </div>
+        <!-- PANE 4: Graphics / FAQ Pane -->
+        <section class="graphics-pane">
+            <div class="topic-menu-label">Quick FAQ Topics</div>
+            <div id="topic-pills" class="topic-pills">
+                <!-- Dynamically injected via script.js from data/faqs.json -->
             </div>
         </section>
 
     </div>
 
-    <!-- Fuse.js for smart fuzzy matching -->
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
-    <script type="module" src="js/script.js?v=7.0"></script>
+    <!-- Main Client Application Script -->
+    <script src="js/script.js?v=7.0"></script>
 </body>
 </html>
