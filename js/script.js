@@ -16,8 +16,11 @@ async function initSimli() {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
     
-    if (!data.session_token) {
-      console.error("[SIMLI] Failed to retrieve session token:", data);
+    // Handle different possible token keys returned by Netlify functions
+    const sessionToken = data.session_token || data.token || data.apiKey;
+
+    if (!sessionToken) {
+      console.error("[SIMLI] Failed to retrieve session token from response:", data);
       return;
     }
 
@@ -29,12 +32,10 @@ async function initSimli() {
       return;
     }
 
-    // Instantiate SimliClient with empty constructor and use Initialize() per official specs
-    simliClient = new SimliClient();
-
+    // Pass configuration directly into the constructor as required by this version of SimliClient
     const simliConfig = {
       apiKey: "",
-      session_token: data.session_token,
+      session_token: sessionToken,
       videoRef: videoElement,
       audioRef: audioElement,
       FaceID: SIMLI_FACE_ID,
@@ -45,7 +46,7 @@ async function initSimli() {
       mode: "livekit"
     };
 
-    simliClient.Initialize(simliConfig);
+    simliClient = new SimliClient(simliConfig);
 
     simliClient.on("start", () => {
       console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
