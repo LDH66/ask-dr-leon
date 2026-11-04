@@ -47,9 +47,9 @@
 
         <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
-            <div class="avatar-wrapper">
-                <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
-                <audio id="simli-audio" autoplay style="display: none;"></audio>
+            <div class="avatar-wrapper" style="position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: inherit;">
+                <!-- Native Simli Stream Frame -->
+                <iframe id="simli-iframe" src="" style="width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; z-index: 2;" allow="camera; microphone; autoplay"></iframe>
                 <div class="avatar-glow"></div>
             </div>
         </section>
@@ -71,8 +71,7 @@
 
     </div>
 
-    <!-- Simli Client UMD SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/simli-client@latest/dist/simli-client.js"></script>
-    <script src="js/script.js?v=2.5"></script>
+    <!-- Main Script -->
+    <script src="js/script.js?v=2.6"></script>
 </body>
 </html>
