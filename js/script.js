@@ -9,7 +9,19 @@ let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic"
 let simliClient = null;
 const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
 
-async function initSimli() {
+async function initSimli(retries = 5) {
+  // Check if SimliClient is loaded; if not, wait briefly for CDN script
+  if (typeof SimliClient === 'undefined') {
+    if (retries > 0) {
+      console.warn(`[SIMLI] SDK not ready yet, retrying in 300ms... (${retries} attempts left)`);
+      setTimeout(() => initSimli(retries - 1), 300);
+      return;
+    } else {
+      console.error("[SIMLI ERROR] SimliClient SDK failed to load from CDN.");
+      return;
+    }
+  }
+
   try {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
@@ -19,15 +31,10 @@ async function initSimli() {
       return;
     }
 
-    if (typeof SimliClient === 'undefined') {
-      console.error("[SIMLI ERROR] SimliClient SDK script not loaded yet.");
-      return;
-    }
-
     simliClient = new SimliClient();
     
     const simliConfig = {
-      apiKey: "", // Handled securely via backend session token
+      apiKey: "", 
       session_token: data.session_token,
       videoRef: document.getElementById("simli-video"),
       audioRef: document.getElementById("simli-audio"),
@@ -121,7 +128,6 @@ function queueAudioStream(base64Audio) {
         return;
     }
 
-    // Convert base64 audio to raw byte array for Simli streaming and speaker playback
     const binaryString = atob(base64Audio);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
@@ -137,7 +143,6 @@ function queueAudioStream(base64Audio) {
         window.currentAudio = new Audio(audioUrl);
         
         window.currentAudio.play().then(() => {
-            // Feed audio stream into Simli for real-time lip-synced avatar video
             if (simliClient) {
                 simliClient.sendAudioData(bytes);
             }
