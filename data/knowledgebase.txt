@@ -1,0 +1,45 @@
+# Vibe Coding: Official Knowledge Base & Course Guide (Module MC623)
+
+## Overview & Origin
+- **Title:** Vibe Coding for AI & Digital Storytelling (Module MC623, 2026/27)[cite: 4].
+- **Author/Origin:** Term coined in February 2025 by Andrej Karpathy, Co-Founder of OpenAI[cite: 5].
+- **Definition:** A programming style where you describe what you want in natural language, and an AI system generates the code[cite: 5]. 
+- **The Creative Paradigm:** Software is a creative medium. You act as the **Creative Director**; AI is your **Junior Developer**. Natural language is the new programming language[cite: 6].
+- **Workflow:** Requires multiple iterations prompting Large Language Models (like ChatGPT, Gemini, or Claude) to build and refine the application[cite: 7].
+- **Major Platforms:** Prominent vibe coding tools include **Bolt.new**, **Lovable**, and **Cursor**[cite: 22].
+- **Planning:** Best practice is to map out site/application paths using flow diagrams before prompting to minimize errors[cite: 14].
+
+## Core Web Technologies & File Formats
+- **HTML (HyperText Markup Language):** Structures web page content using elements like headings, paragraphs, and links[cite: 8]. Can be written in plain text (Notepad) and saved as `index.html`[cite: 9].
+- **CSS (Cascading Style Sheets):** Styles HTML elements with colors, layouts, spacing, fonts, and responsiveness (e.g., dark mode themes)[cite: 8, 11].
+- **JavaScript (JS):** Adds interactive behavior, logic, user input handling, and dynamic updates to web pages[cite: 8, 10].
+- **JSON (JavaScript Object Notation):** Lightweight text format for structured data exchange using key-value pairs (great for small data sets converted from spreadsheets)[cite: 8, 12].
+- **SQL (Structured Query Language):** Declarative language (`CREATE TABLE`, `INSERT INTO`) for querying, inserting, and managing relational data, which is better than JSON for handling thousands of entries[cite: 8, 13].
+
+## Standard Website File Structure
+- `index.html` — Homepage entry point (must be at the top level root folder)[cite: 20, 21].
+- `css/style.css` — All CSS styling[cite: 20].
+- `js/script.js` — All JavaScript logic[cite: 20].
+- `data/data.json` — JSON data files[cite: 20].
+- `images/` — Subfolder containing media assets like logos[cite: 20].
+
+## The 4-Part Prompt Formula
+Framework designed to give an AI coding assistant precise instructions for production-ready code on the first try[cite: 15]:
+1. **Context:** Sets the stage. Tells the AI who you are, what project is being built, and why (e.g., *"You are an expert front-end web developer building a portfolio site for a documentary filmmaker..."*)[cite: 15, 16].
+2. **Goal:** States the primary objective. Defines a single feature or component to keep requests modular and prevent bloated code (e.g., *"Build a lightbox video gallery..."*)[cite: 17].
+3. **Constraints:** Sets boundaries like tech stack, design rules, accessibility, responsiveness, and dark mode aesthetics (e.g., *"Use HTML, Tailwind CSS, and vanilla JS. Dark mode (#0f0f0f)..."*)[cite: 18].
+4. **Output Format:** Dictates how the AI delivers its response, such as a single self-contained `index.html` file with embedded `<style>` and `<script>` tags[cite: 18, 19].
+
+## APIs (Application Programming Interfaces)
+- **Definition:** A set of rules allowing different software applications to talk to each other[cite: 23].
+- **Data Sources:** Commercial and free data sources publish APIs providing keys that allow web applications to import live data (e.g., local weather, news, crime, health, government public data)[cite: 23, 24].
+- **Marketplaces:** Platforms like **RapidAPI** and **APILayer** let developers search for free or paid datasets[cite: 24].
+- **Vibe Integration:** Provide your API key to an LLM so it writes the code to securely interface with live third-party data sources[cite: 25].
+- **Class Examples:** 
+  - *News Finder (Perplexity):* Web app letting users choose cities, fetching data from NewsData.io, and rewriting it as a 50-word story[cite: 26].
+  - *Local Weather (Perplexity):* Web app taking city input and querying the Open-Meteo API[cite: 27].
+
+## Deployment
+- **Platform:** Hosted instantly via platforms like **Netlify** (`netlify.com`)[cite: 21].
+- **Process:** Open a personal account, go to Projects, and drag and drop your website folder containing `index.html` at the top level[cite: 21].
+- **Iteration:** Receive a Netlify URL (e.g., `app-name.netlify.app`), test the site multiple times, update files via LLM prompts, and re-upload/replace files under Project Deploys[cite: 21].

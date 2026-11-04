@@ -1,0 +1,182 @@
+[
+  {
+    "id": "faq_01",
+    "button_label": "Who is Dr. Leon?",
+    "keywords": ["who are you", "who is leon", "leon hawthorne", "introduce yourself"],
+    "question": "Who are you and what is your background?",
+    "answer": "I'm Dr. Leon Hawthorne, a tech educator and lecturer in Digital Media Production at Cardiff University...",
+    "video_file": "assets/video/faq_01.mp4",
+    "audio_file": "assets/audio/faq_01.mp3"
+  },
+  {
+    "id": "faq_02",
+    "button_label": "How was this built?",
+    "keywords": ["how was this app made", "how did you build this", "tech stack", "architecture"],
+    "question": "How was this app made?",
+    "answer": "This site is a hybrid Vibe Coding build using HTML, CSS, JS, Netlify functions, OpenAI, Fish Audio, and Simli.",
+    "video_file": "assets/video/faq_02.mp4",
+    "audio_file": "assets/audio/faq_02.mp3"
+  },
+  {
+    "id": "faq_03",
+    "button_label": "MA Media Course",
+    "keywords": ["ma digital media production", "cardiff university", "ma course", "degree details"],
+    "question": "Tell me about the MA in Digital Media Production at Cardiff University.",
+    "answer": "The MA in Digital Media Production equips creative professionals to master digital storytelling, interactive web apps, and AI tools.",
+    "video_file": "assets/video/faq_03.mp4",
+    "audio_file": "assets/audio/faq_03.mp3"
+  },
+  {
+    "id": "faq_04",
+    "button_label": "What is Vibe Coding?",
+    "keywords": ["what is vibe coding", "define vibe coding", "vibe coding definition"],
+    "question": "What is Vibe Coding?",
+    "answer": "Vibe Coding is an AI-assisted development workflow where you describe intent and UX in natural language while AI generates code.",
+    "video_file": "assets/video/faq_04.mp4",
+    "audio_file": "assets/audio/faq_04.mp3"
+  },
+  {
+    "id": "faq_05",
+    "button_label": "4-Part Prompt Formula",
+    "keywords": ["4 part prompt formula", "prompting strategy", "how to write prompts"],
+    "question": "What is the 4-Part Prompt Formula?",
+    "answer": "The 4-Part Prompt Formula is: Role, Context, Task, and Constraints for precise AI outputs.",
+    "video_file": "assets/video/faq_05.mp4",
+    "audio_file": "assets/audio/faq_05.mp3"
+  },
+  {
+    "id": "faq_06",
+    "button_label": "Need CS Background?",
+    "keywords": ["do i need to learn coding", "no code", "programming background", "syntax"],
+    "question": "Do I need a Computer Science background for Vibe Coding?",
+    "answer": "Not at all! Vibe Coding focuses on system architecture, user experience, and human direction rather than manual syntax.",
+    "video_file": "assets/video/faq_06.mp4",
+    "audio_file": "assets/audio/faq_06.mp3"
+  },
+  {
+    "id": "faq_07",
+    "button_label": "Building Web Apps",
+    "keywords": ["making web apps", "build website", "web development", "single page app"],
+    "question": "How do MA students use Vibe Coding to build web applications?",
+    "answer": "MA students prompt AI to generate responsive frontends, interactive dashboards, and complete single-page web applications.",
+    "video_file": "assets/video/faq_07.mp4",
+    "audio_file": "assets/audio/faq_07.mp3"
+  },
+  {
+    "id": "faq_08",
+    "button_label": "Making Games",
+    "keywords": ["making games", "game development", "phaser", "threejs", "canvas"],
+    "question": "Can I use Vibe Coding to make games and interactive media?",
+    "answer": "Yes! You can rapidly generate 2D canvas games, WebGL browser experiences, and interactive narrative engines.",
+    "video_file": "assets/video/faq_08.mp4",
+    "audio_file": "assets/audio/faq_08.mp3"
+  },
+  {
+    "id": "faq_09",
+    "button_label": "Connecting APIs",
+    "keywords": ["connecting apis", "api integration", "fetch api", "backend services"],
+    "question": "How do I connect external APIs using Vibe Coding?",
+    "answer": "Ask your AI tool to write fetch handlers or serverless endpoints to connect live data feeds, weather, or media APIs.",
+    "video_file": "assets/video/faq_09.mp4",
+    "audio_file": "assets/audio/faq_09.mp3"
+  },
+  {
+    "id": "faq_10",
+    "button_label": "Debugging Errors",
+    "keywords": ["debugging", "fix errors", "broken code", "console errors"],
+    "question": "How do I debug errors when Vibe Coding?",
+    "answer": "Copy the console log or broken behavior back into your AI prompt to get a step-by-step fix instantly.",
+    "video_file": "assets/video/faq_10.mp4",
+    "audio_file": "assets/audio/faq_10.mp3"
+  },
+  {
+    "id": "faq_11",
+    "button_label": "Best AI Tools",
+    "keywords": ["best ai coding tools", "cursor", "v0", "replit", "copilot"],
+    "question": "What are the best AI tools for Vibe Coding?",
+    "answer": "Popular tools include Cursor and VS Code with Copilot for editing, v0.dev for UI components, and Claude or ChatGPT for logic.",
+    "video_file": "assets/video/faq_11.mp4",
+    "audio_file": "assets/audio/faq_11.mp3"
+  },
+  {
+    "id": "faq_12",
+    "button_label": "Mobile Apps & PWAs",
+    "keywords": ["mobile app", "ios android", "pwa", "progressive web app"],
+    "question": "Can I build mobile apps with Vibe Coding?",
+    "answer": "Yes, you can build mobile-first Progressive Web Apps that run smoothly directly in mobile Safari and Chrome browsers.",
+    "video_file": "assets/video/faq_12.mp4",
+    "audio_file": "assets/audio/faq_12.mp3"
+  },
+  {
+    "id": "faq_13",
+    "button_label": "Digital Portfolios",
+    "keywords": ["digital portfolio", "student showcase", "ma portfolio", "interactive project"],
+    "question": "How does Vibe Coding help with my MA media portfolio?",
+    "answer": "It lets you build bespoke interactive showcases and custom media players instead of relying on static PDF portfolios.",
+    "video_file": "assets/video/faq_13.mp4",
+    "audio_file": "assets/audio/faq_13.mp3"
+  },
+  {
+    "id": "faq_14",
+    "button_label": "Version Control (Git)",
+    "keywords": ["version control", "github", "saving work", "git deployment"],
+    "question": "Why is version control important in Vibe Coding?",
+    "answer": "Commit your progress to GitHub frequently so you can experiment freely with AI prompts without losing stable milestones.",
+    "video_file": "assets/video/faq_14.mp4",
+    "audio_file": "assets/audio/faq_14.mp3"
+  },
+  {
+    "id": "faq_15",
+    "button_label": "Prompt Engineering",
+    "keywords": ["prompt engineering", "better prompts", "ai instructions"],
+    "question": "What is Prompt Engineering in software creation?",
+    "answer": "It is the skill of structuring instructions clearly, defining data structures beforehand, and asking for modular code.",
+    "video_file": "assets/video/faq_15.mp4",
+    "audio_file": "assets/audio/faq_15.mp3"
+  },
+  {
+    "id": "faq_16",
+    "button_label": "JavaScript Role",
+    "keywords": ["javascript overview", "what is js", "interactivity", "web logic"],
+    "question": "What is JavaScript's role in Vibe Coding?",
+    "answer": "JavaScript handles the core interactivity, button events, and logic that make your web applications come alive.",
+    "video_file": "assets/video/faq_16.mp4",
+    "audio_file": "assets/audio/faq_16.mp3"
+  },
+  {
+    "id": "faq_17",
+    "button_label": "HTML Skeleton",
+    "keywords": ["html overview", "what is html", "web structure"],
+    "question": "What is HTML in modern digital media?",
+    "answer": "HTML acts as the skeletal structure for web headers, video players, text blocks, and user input buttons.",
+    "video_file": "assets/video/faq_17.mp4",
+    "audio_file": "assets/audio/faq_17.mp3"
+  },
+  {
+    "id": "faq_18",
+    "button_label": "CSS Styling",
+    "keywords": ["css overview", "styling", "designing UI", "layouts"],
+    "question": "How is CSS handled when Vibe Coding?",
+    "answer": "CSS controls visual aesthetics and layouts, letting you describe your design vibe while AI writes modern flexbox and grid rules.",
+    "video_file": "assets/video/faq_18.mp4",
+    "audio_file": "assets/audio/faq_18.mp3"
+  },
+  {
+    "id": "faq_19",
+    "button_label": "Media Players",
+    "keywords": ["audio video projects", "multimedia player", "streaming media"],
+    "question": "Can I build custom video and audio players for digital media projects?",
+    "answer": "Yes, prompt AI to create custom HTML5 video and audio interfaces with waveform visualizers and custom playback controls.",
+    "video_file": "assets/video/faq_19.mp4",
+    "audio_file": "assets/audio/faq_19.mp3"
+  },
+  {
+    "id": "faq_20",
+    "button_label": "Employability",
+    "keywords": ["career", "industry jobs", "skills for job market", "employability"],
+    "question": "How does Vibe Coding make MA graduates more employable?",
+    "answer": "It empowers you to act as a technical producer, capable of prototyping working products and bridging design and engineering teams.",
+    "video_file": "assets/video/faq_20.mp4",
+    "audio_file": "assets/audio/faq_20.mp3"
+  }
+]
