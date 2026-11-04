@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const ELEVEN_VOICE_ID = "vOUSQuw1UT28N8q4CT5l";
+const FISH_VOICE_ID = "68e3fa24abdc47609409bb667b558a59"; // Fish Audio Voice Model ID
 
 let kbContent = "";
 try {
@@ -36,7 +36,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { prompt, isFollowUp, useElevenLabs } = JSON.parse(event.body || "{}");
+    const { prompt, isFollowUp, useFishAudio } = JSON.parse(event.body || "{}");
     
     if (!prompt) {
       return {
@@ -64,26 +64,27 @@ exports.handler = async function (event) {
     let base64Audio = null;
 
     // 2. Synthesize audio
-    if (useElevenLabs) {
-      const ttsResponse = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?optimize_streaming_latency=3`,
-        {
-          method: "POST",
-          headers: {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": process.env.ELEVENLABS_API_KEY,
-          },
-          body: JSON.stringify({
-            text: drLeonReply,
-            model_id: "eleven_turbo_v2_5",
-          }),
-        }
-      );
+    if (useFishAudio) {
+      const ttsResponse = await fetch("https://api.fish.audio/v1/tts", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.FISH_AUDIO_API_KEY}`,
+          "Content-Type": "application/json",
+          "Accept": "audio/mp3"
+        },
+        body: JSON.stringify({
+          text: drLeonReply,
+          reference_id: FISH_VOICE_ID,
+          format: "mp3"
+        }),
+      });
 
       if (ttsResponse.ok) {
         const arrayBuffer = await ttsResponse.arrayBuffer();
         base64Audio = Buffer.from(arrayBuffer).toString("base64");
+      } else {
+        const errText = await ttsResponse.text();
+        console.error("Fish Audio TTS Error:", errText);
       }
     } else {
       // Direct REST call to OpenAI Audio TTS endpoint
