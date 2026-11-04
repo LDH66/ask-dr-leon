@@ -5,7 +5,6 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  // Fallback to hardcoded key if environment variable is missing in Netlify
   const apiKey = process.env.SIMLI_API_KEY || "kdaiuahahvdm2sib2rzqm";
 
   try {
@@ -16,10 +15,12 @@ exports.handler = async function (event) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        faceId: SIMLI_FACE_ID,
-        apiVersion: "v2",
-        maxSessionLength: 600,
-        maxIdleTime: 180
+        apiKey: apiKey,
+        config: {
+          faceId: SIMLI_FACE_ID,
+          maxSessionLength: 600,
+          maxIdleTime: 180
+        }
       })
     });
 
@@ -31,7 +32,6 @@ exports.handler = async function (event) {
 
     const data = await response.json();
     
-    // Ensure we send back the session token clearly
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
