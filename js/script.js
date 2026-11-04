@@ -10,16 +10,13 @@ let fillerPool = [];
 
 function getNextFillerNum() {
     if (fillerPool.length === 0) {
-        // Create an array of numbers 1 through 8
         fillerPool = [1, 2, 3, 4, 5, 6, 7, 8];
-        // Fisher-Yates Shuffle algorithm to randomize the pool
         for (let i = fillerPool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [fillerPool[i], fillerPool[j]] = [fillerPool[j], fillerPool[i]];
         }
         console.log("[DR. LEON] Filler pool reshuffled:", fillerPool);
     }
-    // Pull the next filler number from the front of the shuffled pool
     return fillerPool.shift();
 }
 
@@ -39,10 +36,10 @@ function setupVoiceToggle() {
 
     voiceToggleBtn.addEventListener('click', () => {
         if (currentVoiceEngine === "generic") {
-            currentVoiceEngine = "elevenlabs";
+            currentVoiceEngine = "fishaudio";
             voiceToggleBtn.textContent = "Voice: Leon";
             voiceToggleBtn.classList.add('leon-active');
-            console.log("[DR. LEON] Switched engine to: ElevenLabs (Leon)");
+            console.log("[DR. LEON] Switched engine to: Fish Audio (Leon)");
         } else {
             currentVoiceEngine = "generic";
             voiceToggleBtn.textContent = "Voice: Generic";
@@ -52,11 +49,10 @@ function setupVoiceToggle() {
     });
 }
 
-// Play an instant local filler sound, pulling from the non-repeating 1–8 pool
 function playInstantFiller() {
     return new Promise((resolve) => {
         const fillerNum = getNextFillerNum();
-        const suffix = (currentVoiceEngine === "elevenlabs") ? "leon" : "generic";
+        const suffix = (currentVoiceEngine === "fishaudio") ? "leon" : "generic";
         const fillerSrc = `audio/filler${fillerNum}_${suffix}.mp3`;
 
         if (window.currentAudio) {
@@ -66,16 +62,11 @@ function playInstantFiller() {
         console.log("[DR. LEON] Playing instant filler:", fillerSrc);
         window.currentAudio = new Audio(fillerSrc);
         
-        // Ensure the main answer never cuts off the filler early
-        window.currentAudio.onended = () => {
-            resolve();
-        };
-
+        window.currentAudio.onended = () => { resolve(); };
         window.currentAudio.onerror = (err) => {
             console.warn("[DR. LEON] Filler playback prevented or failed:", err);
-            resolve(); // Resolve anyway so the main answer can proceed if audio fails
+            resolve(); 
         };
-
         window.currentAudio.play().catch(err => {
             console.warn("[DR. LEON] Filler autoplay restricted by browser policy:", err);
             resolve();
@@ -83,20 +74,16 @@ function playInstantFiller() {
     });
 }
 
-// Queue / Play the real backend audio stream only AFTER the filler finishes
 function queueAudioStream(base64Audio) {
     if (!base64Audio) {
         console.error("[DR. LEON ERROR] No base64 audio returned!");
         return;
     }
 
-    console.log("[DR. LEON] Main response audio ready. Waiting for filler to complete...");
-
     const playMain = () => {
         if (window.currentAudio && window.currentAudio.paused && window.currentAudio.src.startsWith('data:audio')) {
-            return; // Already playing
+            return;
         }
-        console.log("[DR. LEON] Swapping to main response audio stream.");
         const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
         window.currentAudio = new Audio(audioUrl);
         window.currentAudio.play().catch(err => {
@@ -264,7 +251,6 @@ function bindTopicPills() {
     });
 }
 
-// Process Query: Instantly plays varying filler in parallel while fetching background response, then queues main audio cleanly
 async function processUserQuery(query, isFollowUp = false) {
     if (!isFollowUp) {
         hasAskedFirstQuestion = true;
@@ -274,10 +260,7 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
-    // 1. Instantly trigger the local filler sound with shuffled pool variation[cite: 1]
     const fillerPromise = playInstantFiller();
-
-    console.log("[DR. LEON] Fetching background response for:", query);
 
     try {
         const response = await fetch('/.netlify/functions/chat', {
@@ -286,18 +269,13 @@ async function processUserQuery(query, isFollowUp = false) {
             body: JSON.stringify({ 
                 prompt: query, 
                 isFollowUp: isFollowUp,
-                useElevenLabs: (currentVoiceEngine === "elevenlabs")
+                useFishAudio: (currentVoiceEngine === "fishaudio")
             })
         });
 
         if (response.ok) {
             const data = await response.json();
-            console.log("[DR. LEON] Background response received.");
-            
-            // 2. Wait for the filler to finish 100% before allowing the main audio to trigger[cite: 1]
             await fillerPromise;
-
-            // 3. Seamlessly play the real response audio[cite: 1]
             queueAudioStream(data.audio);
             return;
         } else {
