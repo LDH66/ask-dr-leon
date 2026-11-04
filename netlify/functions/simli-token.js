@@ -29,6 +29,7 @@ exports.handler = async function (event) {
 
     const data = await response.json();
     
+    // Ensure we return the session_token field expected by the client
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
