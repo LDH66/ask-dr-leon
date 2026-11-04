@@ -21,7 +21,8 @@
                 Vibe Coding Explained
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <button id="voiceToggleBtn" class="voice-toggle-btn" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Voice: Generic</button>
+                <!-- Mode Toggle Button replacing old voice toggle -->
+                <button id="mediaModeBtn" class="voice-toggle-btn leon-active" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Mode: Video</button>
                 <button class="menu-btn" aria-label="Menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
                 </button>
@@ -48,8 +49,13 @@
         <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
+                <!-- Simli Video Stream (shown in Video Mode) -->
                 <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
-                <audio id="simli-audio" autoplay playsinline></audio>
+                
+                <!-- Fallback Still Image (shown in Audio Mode) -->
+                <img id="default-avatar-img" src="images/Default-image.jpg" alt="Dr. Leon" style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit; display: none;">
+
+                <audio id="simli-audio" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></audio>
                 <div class="avatar-glow"></div>
             </div>
         </section>
@@ -71,6 +77,6 @@
 
     </div>
 
-    <script type="module" src="js/script.js?v=5.0"></script>
+    <script type="module" src="js/script.js?v=6.0"></script>
 </body>
 </html>
