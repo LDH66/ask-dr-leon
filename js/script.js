@@ -5,6 +5,46 @@ let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
 let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic")
 
+// --- Simli Avatar Client Instance ---
+let simliClient = null;
+const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
+
+async function initSimli() {
+  try {
+    const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
+    const data = await res.json();
+    
+    if (!data.session_token) {
+      console.error("[SIMLI] Failed to retrieve session token:", data);
+      return;
+    }
+
+    if (typeof SimliClient === 'undefined') {
+      console.error("[SIMLI ERROR] SimliClient SDK script not loaded yet.");
+      return;
+    }
+
+    simliClient = new SimliClient();
+    
+    const simliConfig = {
+      apiKey: "", // Handled securely via backend session token
+      session_token: data.session_token,
+      videoRef: document.getElementById("simli-video"),
+      audioRef: document.getElementById("simli-audio"),
+      FaceID: SIMLI_FACE_ID,
+      handleSilence: true,
+      maxSessionLength: 600,
+      maxIdleTime: 180,
+    };
+
+    simliClient.Initialize(simliConfig);
+    simliClient.start();
+    console.log("[SIMLI] Avatar stream initialized and started successfully!");
+  } catch (err) {
+    console.error("[SIMLI ERROR] Initialization failed:", err);
+  }
+}
+
 // --- Shuffle Pool Logic for Fillers 1 through 8 ---
 let fillerPool = [];
 
@@ -22,8 +62,9 @@ function getNextFillerNum() {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
-    console.log("[DR. LEON] Audio Pipeline with Local Fillers Active 🚀");
+    console.log("[DR. LEON] Audio Pipeline & Simli Avatar Active 🚀");
     console.log("--------------------------------------------------");
+    initSimli();
     setupNetlifyMicrophone();
     setupUIHandlers();
     setupVoiceToggle();
@@ -80,13 +121,27 @@ function queueAudioStream(base64Audio) {
         return;
     }
 
+    // Convert base64 audio to raw byte array for Simli streaming and speaker playback
+    const binaryString = atob(base64Audio);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+
     const playMain = () => {
         if (window.currentAudio && window.currentAudio.paused && window.currentAudio.src.startsWith('data:audio')) {
             return;
         }
         const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
         window.currentAudio = new Audio(audioUrl);
-        window.currentAudio.play().catch(err => {
+        
+        window.currentAudio.play().then(() => {
+            // Feed audio stream into Simli for real-time lip-synced avatar video
+            if (simliClient) {
+                simliClient.sendAudioData(bytes);
+            }
+        }).catch(err => {
             console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
         });
     };
