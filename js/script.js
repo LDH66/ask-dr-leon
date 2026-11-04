@@ -9,6 +9,7 @@ let currentVoiceEngine = "generic";
 
 let simliClient = null;
 let audioCtx = null;
+let isAudioUnlocked = false;
 
 async function initSimli() {
   if (simliClient) {
@@ -52,10 +53,11 @@ async function initSimli() {
     simliClient.on("start", () => {
       console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
       
-      if (audioElement) {
+      // Respect browser autoplay policy: unmute only if user has interacted, otherwise let gesture listener handle it
+      if (audioElement && isAudioUnlocked) {
         audioElement.muted = false;
         audioElement.volume = 1.0;
-        audioElement.play().catch(e => console.warn("[SIMLI] Audio auto-play restriction:", e));
+        audioElement.play().catch(e => console.warn("[SIMLI] Audio play warning:", e));
       }
     });
 
@@ -95,23 +97,29 @@ document.addEventListener('DOMContentLoaded', () => {
     setupVoiceToggle();
     updateRelatedTopics(""); 
 
-    // Global browser autoplay policy unlock: unmunts and plays audio on first user click/tap anywhere
+    // Unlock audio context and unmute immediately on first user gesture anywhere
     const unlockAudio = () => {
+        isAudioUnlocked = true;
         const audioElement = document.getElementById("simli-audio");
         if (audioElement) {
             audioElement.muted = false;
             audioElement.volume = 1.0;
             audioElement.play().catch(() => {});
         }
-        if (audioCtx && audioCtx.state === 'suspended') {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        }
+        if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
         window.removeEventListener('click', unlockAudio);
         window.removeEventListener('touchstart', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
     };
 
     window.addEventListener('click', unlockAudio);
     window.addEventListener('touchstart', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
 });
 
 function setupVoiceToggle() {
@@ -162,6 +170,10 @@ async function sendAudioToSimli(base64Audio) {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
         }
+        if (audioCtx.state === 'suspended') {
+            await audioCtx.resume();
+        }
+
         const binaryString = atob(base64Audio);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
@@ -179,6 +191,13 @@ async function sendAudioToSimli(base64Audio) {
         }
         
         simliClient.sendAudioData(new Uint8Array(pcm16.buffer));
+
+        // Ensure audio element is active and unmuted when playing audio chunks
+        const audioElement = document.getElementById("simli-audio");
+        if (audioElement) {
+            audioElement.muted = false;
+            audioElement.play().catch(() => {});
+        }
     } catch (e) {
         console.warn("[SIMLI] PCM conversion fallback:", e);
     }
