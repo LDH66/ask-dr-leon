@@ -213,10 +213,10 @@ body {
     font-weight: 500;
 }
 
-/* PANE 3: Avatar Pane (Strict 16:9 Aspect Ratio Container) */
+/* PANE 3: Avatar Pane (Strict 1:1 Aspect Ratio Container & Pro-Rata Fit) */
 .avatar-pane {
     width: 100%;
-    padding: 12px 16px;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -225,21 +225,23 @@ body {
 .avatar-wrapper {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9; /* Enforces exact 16:9 ratio */
+    aspect-ratio: 1 / 1; /* Enforces exact 1:1 square ratio */
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #07090e;
+    background: #000000; /* Letterbox background */
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
-.avatar-wrapper img {
+.avatar-wrapper img,
+.avatar-wrapper video,
+.avatar-wrapper canvas {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Fills 16:9 box cleanly without distortion */
+    object-fit: contain; /* Fits entire 1:1 frame pro-rata without chopping off the head */
     z-index: 2;
 }
 
@@ -252,9 +254,9 @@ body {
     pointer-events: none;
 }
 
-/* PANE 4: Graphics Pane / Bordered Topics (Sits immediately below avatar) */
+/* PANE 4: Graphics Pane / Bordered Topics (Compressed height below avatar) */
 .graphics-pane {
-    padding: 12px 16px 30px 16px;
+    padding: 8px 16px 20px 16px;
     background: rgba(13, 19, 34, 0.95);
     flex-shrink: 0;
 }
@@ -263,7 +265,7 @@ body {
     border: 1px solid rgba(99, 102, 241, 0.3);
     background: rgba(17, 24, 39, 0.85);
     border-radius: 16px;
-    padding: 14px;
+    padding: 12px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
 
@@ -273,7 +275,7 @@ body {
     color: #818cf8;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -292,16 +294,16 @@ body {
 .topic-pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .pill-btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: #e2e8f0;
-    padding: 8px 14px;
+    padding: 6px 12px;
     border-radius: 12px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
