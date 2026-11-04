@@ -1,45 +1,66 @@
-export async function handler(event, context) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
-  }
-
-  const apiKey = process.env.SIMLI_API_KEY;
-  const faceId = "YOUR_SIMLI_FACE_ID_HERE"; // Put your hardcoded Face ID string right here
-
-  if (!apiKey) {
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: "Missing SIMLI_API_KEY in environment variables." }) 
+exports.handler = async function(event, context) {
+    // CORS headers to prevent cross-origin issues
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Content-Type': 'application/json'
     };
-  }
 
-  try {
-    const response = await fetch("https://api.simli.ai/get-session-token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        apiKey: apiKey,
-        faceId: faceId,
-        isJPG: false
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      return { statusCode: response.status, body: JSON.stringify({ error: errText }) };
+    // Handle browser preflight OPTIONS request
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers,
+            body: ''
+        };
     }
 
-    const data = await response.json();
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_token: data.session_token || data.token || data })
-    };
+    try {
+        const apiKey = process.env.SIMLI_API_KEY;
 
-  } catch (error) {
-    console.error("[SIMLI TOKEN ERROR]:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
-  }
-}
+        if (!apiKey) {
+            console.error('[SIMLI ERROR] SIMLI_API_KEY is not set in Netlify environment variables.');
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ error: 'Server configuration error: SIMLI_API_KEY missing.' })
+            };
+        }
+
+        // Request token/session from Simli API
+        const response = await fetch('https://api.simli.ai/get-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ apiKey: apiKey })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[SIMLI ERROR] API responded with status ${response.status}: ${errorText}`);
+            return {
+                statusCode: response.status,
+                headers,
+                body: JSON.stringify({ error: `Simli API error: ${errorText}` })
+            };
+        }
+
+        const data = await response.json();
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(data)
+        };
+
+    } catch (error) {
+        console.error('[SIMLI EXCEPTION]', error);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ error: error.message || 'Internal server error' })
+        };
+    }
+};
