@@ -5,23 +5,8 @@ let hasAskedFirstQuestion = false;
 let lastAskedQuery = "What is this site about and what is its core purpose?";
 let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic")
 
-// --- Simli Avatar Client Instance ---
-let simliClient = null;
-const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
-
-async function initSimli(retries = 10) {
-  // Check if SimliClient is loaded on window
-  if (typeof SimliClient === 'undefined') {
-    if (retries > 0) {
-      console.warn(`[SIMLI] SDK loading... retries left: ${retries}`);
-      setTimeout(() => initSimli(retries - 1), 300);
-      return;
-    } else {
-      console.error("[SIMLI ERROR] SimliClient SDK failed to load from CDN.");
-      return;
-    }
-  }
-
+// --- Initialize Simli via Iframe Stream ---
+async function initSimli() {
   try {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
@@ -31,22 +16,11 @@ async function initSimli(retries = 10) {
       return;
     }
 
-    simliClient = new SimliClient();
-    
-    const simliConfig = {
-      apiKey: "", 
-      session_token: data.session_token,
-      videoRef: document.getElementById("simli-video"),
-      audioRef: document.getElementById("simli-audio"),
-      FaceID: SIMLI_FACE_ID,
-      handleSilence: true,
-      maxSessionLength: 600,
-      maxIdleTime: 180,
-    };
-
-    simliClient.Initialize(simliConfig);
-    simliClient.start();
-    console.log("[SIMLI] Avatar stream initialized and started successfully!");
+    const iframe = document.getElementById("simli-iframe");
+    if (iframe) {
+      iframe.src = `https://simli.ai/embed?sessionToken=${data.session_token}`;
+      console.log("[SIMLI] Avatar iframe stream loaded successfully!");
+    }
   } catch (err) {
     console.error("[SIMLI ERROR] Initialization failed:", err);
   }
@@ -69,7 +43,7 @@ function getNextFillerNum() {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
-    console.log("[DR. LEON] Audio Pipeline & Simli Avatar Active 🚀");
+    console.log("[DR. LEON] Audio Pipeline & Simli Iframe Active 🚀");
     console.log("--------------------------------------------------");
     initSimli();
     setupNetlifyMicrophone();
@@ -128,25 +102,13 @@ function queueAudioStream(base64Audio) {
         return;
     }
 
-    const binaryString = atob(base64Audio);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-
     const playMain = () => {
         if (window.currentAudio && window.currentAudio.paused && window.currentAudio.src.startsWith('data:audio')) {
             return;
         }
         const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
         window.currentAudio = new Audio(audioUrl);
-        
-        window.currentAudio.play().then(() => {
-            if (simliClient) {
-                simliClient.sendAudioData(bytes);
-            }
-        }).catch(err => {
+        window.currentAudio.play().catch(err => {
             console.warn("[DR. LEON WARNING] Main audio playback restricted:", err);
         });
     };
