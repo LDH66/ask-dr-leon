@@ -1,6 +1,9 @@
 {
   "name": "ask-dr-leon",
   "version": "1.0.0",
+  "scripts": {
+    "generate-fillers": "node js/generate_fillers.js"
+  },
   "dependencies": {
     "openai": "^4.0.0"
   }
