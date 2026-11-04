@@ -11,6 +11,15 @@ let simliClient = null;
 let audioCtx = null;
 
 async function initSimli() {
+  if (simliClient) {
+    try {
+      await simliClient.close();
+    } catch (e) {
+      console.warn("[SIMLI] Previous client cleanup warning:", e);
+    }
+    simliClient = null;
+  }
+
   try {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
@@ -35,9 +44,9 @@ async function initSimli() {
       sessionToken,
       videoElement,
       audioElement,
-      null,           // null for default LiveKit ICE config
-      LogLevel.INFO,  // Log level
-      "livekit"       // Explicit mode
+      null,           
+      LogLevel.INFO,  
+      "livekit"       
     );
 
     simliClient.on("start", () => {
@@ -62,7 +71,7 @@ async function initSimli() {
   }
 }
 
-// --- Shuffle Pool Logic for Fillers (Retained, bypassed for speed) ---
+// --- Shuffle Pool Logic for Fillers ---
 let fillerPool = [];
 
 function getNextFillerNum() {
@@ -85,6 +94,24 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUIHandlers();
     setupVoiceToggle();
     updateRelatedTopics(""); 
+
+    // Global browser autoplay policy unlock: unmunts and plays audio on first user click/tap anywhere
+    const unlockAudio = () => {
+        const audioElement = document.getElementById("simli-audio");
+        if (audioElement) {
+            audioElement.muted = false;
+            audioElement.volume = 1.0;
+            audioElement.play().catch(() => {});
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        window.removeEventListener('click', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
 });
 
 function setupVoiceToggle() {
@@ -107,13 +134,11 @@ function setupVoiceToggle() {
 }
 
 function stopCurrentSpeech() {
-    // Stop local HTML audio elements
     if (window.currentAudio) {
         window.currentAudio.pause();
         window.currentAudio.currentTime = 0;
     }
     
-    // Stop Simli/LiveKit audio stream output immediately
     const audioElement = document.getElementById("simli-audio");
     if (audioElement) {
         audioElement.pause();
@@ -122,7 +147,6 @@ function stopCurrentSpeech() {
 
     if (simliClient) {
         try {
-            // Clear current audio queue buffer on Simli client if supported
             if (typeof simliClient.clearAudioData === 'function') {
                 simliClient.clearAudioData();
             }
@@ -132,7 +156,6 @@ function stopCurrentSpeech() {
     }
 }
 
-// Helper to decode base64 audio into raw PCM16 stream for Simli Lip-Sync
 async function sendAudioToSimli(base64Audio) {
     if (!simliClient) return;
     try {
@@ -179,7 +202,7 @@ function setupNetlifyMicrophone() {
 
     micBtn.addEventListener('click', async () => {
         if (!isRecording) {
-            stopCurrentSpeech(); // Interrupt current speech when user starts recording
+            stopCurrentSpeech(); 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: { echoCancellation: true, noiseSuppression: true } 
@@ -321,7 +344,6 @@ function bindTopicPills() {
 }
 
 async function processUserQuery(query, isFollowUp = false) {
-    // INSTANT INTERRUPTION: Stop whatever Dr. Leon is currently saying
     stopCurrentSpeech();
 
     if (!isFollowUp) {
