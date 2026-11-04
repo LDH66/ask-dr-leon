@@ -1,3 +1,5 @@
+import { SimliClient, LogLevel } from "https://cdn.jsdelivr.net/npm/simli-client@latest/+esm";
+
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
@@ -9,19 +11,7 @@ let currentVoiceEngine = "generic"; // Default voice mode: OpenAI TTS ("generic"
 let simliClient = null;
 const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
 
-async function initSimli(retries = 5) {
-  // Check if SimliClient is loaded; if not, wait briefly for CDN script
-  if (typeof SimliClient === 'undefined') {
-    if (retries > 0) {
-      console.warn(`[SIMLI] SDK not ready yet, retrying in 300ms... (${retries} attempts left)`);
-      setTimeout(() => initSimli(retries - 1), 300);
-      return;
-    } else {
-      console.error("[SIMLI ERROR] SimliClient SDK failed to load from CDN.");
-      return;
-    }
-  }
-
+async function initSimli() {
   try {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
@@ -31,21 +21,27 @@ async function initSimli(retries = 5) {
       return;
     }
 
-    simliClient = new SimliClient();
-    
-    const simliConfig = {
-      apiKey: "", 
-      session_token: data.session_token,
-      videoRef: document.getElementById("simli-video"),
-      audioRef: document.getElementById("simli-audio"),
-      FaceID: SIMLI_FACE_ID,
-      handleSilence: true,
-      maxSessionLength: 600,
-      maxIdleTime: 180,
-    };
+    const videoElement = document.getElementById("simli-video");
+    const audioElement = document.getElementById("simli-audio");
 
-    simliClient.Initialize(simliConfig);
-    simliClient.start();
+    // Initialize SimliClient
+    simliClient = new SimliClient(
+      data.session_token,
+      videoElement,
+      audioElement,
+      null, // null for LiveKit mode
+      LogLevel.INFO
+    );
+
+    simliClient.on("speaking", () => {
+      console.log("[SIMLI] Avatar is talking");
+    });
+
+    simliClient.on("stop", () => {
+      console.log("[SIMLI] Session ended");
+    });
+
+    await simliClient.start();
     console.log("[SIMLI] Avatar stream initialized and started successfully!");
   } catch (err) {
     console.error("[SIMLI ERROR] Initialization failed:", err);
