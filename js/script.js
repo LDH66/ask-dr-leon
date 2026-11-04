@@ -9,18 +9,17 @@ let currentVoiceEngine = "generic";
 
 let simliClient = null;
 let audioCtx = null;
-const SIMLI_FACE_ID = "bc1070f5-6eec-4a9e-ac5e-1ad282a06624";
 
 async function initSimli() {
   try {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
     
-    // Handle different possible token keys returned by Netlify functions
-    const sessionToken = data.session_token || data.token || data.apiKey;
+    console.log("[SIMLI] Token response from backend:", data);
+    const sessionToken = data.session_token;
 
     if (!sessionToken) {
-      console.error("[SIMLI] Failed to retrieve session token from response:", data);
+      console.error("[SIMLI] Failed to retrieve session token string from Netlify.");
       return;
     }
 
@@ -28,25 +27,18 @@ async function initSimli() {
     const audioElement = document.getElementById("simli-audio");
 
     if (!videoElement || !audioElement) {
-      console.error("[SIMLI ERROR] Missing video/audio DOM elements.");
+      console.error("[SIMLI ERROR] Missing video or audio element in DOM.");
       return;
     }
 
-    // Pass configuration directly into the constructor as required by this version of SimliClient
-    const simliConfig = {
-      apiKey: "",
+    // Initialize SimliClient using the exact single configuration object signature
+    simliClient = new SimliClient({
+      apiKey: "", // Left blank as token is pre-generated on backend
       session_token: sessionToken,
       videoRef: videoElement,
       audioRef: audioElement,
-      FaceID: SIMLI_FACE_ID,
-      handleSilence: true,
-      maxSessionLength: 600,
-      maxIdleTime: 180,
-      logLevel: LogLevel.INFO,
-      mode: "livekit"
-    };
-
-    simliClient = new SimliClient(simliConfig);
+      logLevel: LogLevel.INFO
+    });
 
     simliClient.on("start", () => {
       console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
@@ -57,7 +49,7 @@ async function initSimli() {
     });
 
     await simliClient.start();
-    console.log("[SIMLI] client.start() resolved successfully.");
+    console.log("[SIMLI] client.start() connected successfully.");
 
   } catch (err) {
     console.error("[SIMLI ERROR] Initialization failed:", err);
