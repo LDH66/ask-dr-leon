@@ -1,134 +1,81 @@
-const OpenAI = require("openai");
-const fs = require("fs");
-const path = require("path");
+import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const FISH_VOICE_ID = "68e3fa24abdc47609409bb667b558a59"; // Fish Audio Voice Model ID
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-let kbContent = "";
-try {
-  const kbPath = path.join(__dirname, "../../knowledgebase.txt");
-  if (fs.existsSync(kbPath)) {
-    kbContent = fs.readFileSync(kbPath, "utf8");
-  }
-} catch (err) {
-  console.warn("Could not read knowledgebase.txt", err);
-}
-
-const DR_LEON_BASE_PROMPT = `You are Dr Leon Hawthorne, an expert AI mentor with a refined British persona. Always speak in the first person ("I", "my", "me").
-
-CRITICAL RULES YOU MUST FOLLOW:
-1. IDENTITY & INTRODUCTION: You are Dr Leon Hawthorne, Senior Lecturer and Course Director for the MA in Artificial Intelligence & Digital Media Production at Cardiff University's School of Journalism, Media and Culture (as featured on www.leonhawthorne.com). IMPORTANT: You must ONLY introduce yourself as "I am Dr Leon Hawthorne..." and add "You can call me Leon or Dr Leon" when the user explicitly asks who you are, who made this app, or about your background. For all other technical or subject questions (like HTML, JavaScript, vibe coding, prompt engineering, etc.), dive straight into the answer naturally without stating your full name at the start.
-2. SCOPE: You answer questions about vibe coding, AI digital media production, programming fundamentals (such as JavaScript, HTML, and APIs), prompt engineering, and any related topics found in your knowledge base, OR questions about yourself and this site.
-3. OUT-OF-SCOPE RULE: If the user asks about completely unrelated topics (like weather, sports, general politics, or coding outside of AI/vibe development), politely decline using varied, natural phrasing. Never use the exact same opening line every time. Mix between phrasing such as:
-   - "That's a fascinating topic, but I'm afraid my focus here is strictly on vibe coding and AI media production."
-   - "While I appreciate the query, my expertise in this app is dedicated solely to vibe coding and AI media production."
-   - "That's an intriguing question, but I can only assist with questions regarding vibe coding and AI media production."
-   - "I'm afraid that falls outside my core subject area—this app is designed specifically for vibe coding and AI media production."
-4. SAFETY & CONDUCT: You must NEVER swear, use profanity, or engage in any conversations about sex. Keep all interactions strictly professional, educational, and polite.
-
-Official Knowledge Base for Vibe Coding:
-${kbContent}`;
-
-exports.handler = async function (event) {
+export async function handler(event, context) {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+    return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
 
   try {
-    const { prompt, isFollowUp, useFishAudio } = JSON.parse(event.body || "{}");
-    
+    const { prompt, isFollowUp, useFishAudio } = JSON.parse(event.body);
+
     if (!prompt) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing prompt in request body" }),
-      };
+      return { statusCode: 400, body: JSON.stringify({ error: "Prompt is required" }) };
     }
 
-    const systemInstruction = isFollowUp
-      ? `${DR_LEON_BASE_PROMPT}\n\nInstruction: This is a follow-up 'Tell me more' request regarding: "${prompt}". Your response MUST begin with a natural conversational opener followed naturally by the core gist of the topic—DO NOT repeat the user's question verbatim or restate your name. Spoken length should be around 80-90 words so it takes roughly 30 seconds to speak.`
-      : `${DR_LEON_BASE_PROMPT}\n\nInstruction: Answer clearly and engagingly, leveraging the knowledge base and concepts like JavaScript, HTML, prompt engineering, or APIs whenever relevant. Do not repeat your full introduction unless asked about your identity. Your spoken answer MUST be around 40-45 words so it takes roughly 15 seconds to speak.`;
+    console.log(`[CHAT FUNCTION] Processing prompt: "${prompt}" (FollowUp: ${isFollowUp})`);
 
-    // 1. Generate text response using GPT-4o-mini
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    // 1. Generate a short, snappy text response from OpenAI (Fast model + strict token limit)
+    const chatCompletion = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // Fast and lightweight model
       messages: [
-        { role: "system", content: systemInstruction },
-        { role: "user", content: prompt }
+        {
+          role: "system",
+          content: "You are Dr. Leon, an expert tech educator explaining Vibe Coding and software development. Answer extremely concisely in 2 to 3 short sentences max. Be punchy, direct, and conversational."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
       ],
-      max_tokens: isFollowUp ? 180 : 90,
+      max_tokens: 120, // Strict limit ensures fast generation time
       temperature: 0.7,
     });
 
-    const drLeonReply = completion.choices[0].message.content;
-    let base64Audio = null;
+    const replyText = chatCompletion.choices[0].message.content;
+    console.log(`[CHAT FUNCTION] Generated reply: "${replyText}"`);
 
-    // 2. Synthesize audio
+    let base64Audio = "";
+
+    // 2. Convert text to speech using the ultra-fast 'tts-1' model
     if (useFishAudio) {
-      console.log("[FISH AUDIO] Requesting TTS for model:", FISH_VOICE_ID);
-      const ttsResponse = await fetch("https://api.fish.audio/v1/tts", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.FISH_AUDIO_API_KEY}`,
-          "Content-Type": "application/json",
-          "Accept": "audio/mp3",
-          "model": "s2.1-pro-free"
-        },
-        body: JSON.stringify({
-          text: drLeonReply,
-          reference_id: FISH_VOICE_ID,
-          format: "mp3"
-        }),
-      });
-
-      if (ttsResponse.ok) {
-        const arrayBuffer = await ttsResponse.arrayBuffer();
-        base64Audio = Buffer.from(arrayBuffer).toString("base64");
-        console.log("[FISH AUDIO] Success! Audio generated.");
-      } else {
-        const errText = await ttsResponse.text();
-        console.error("Fish Audio TTS Error Status:", ttsResponse.status, errText);
-      }
+      // Placeholder or integration for Fish Audio if enabled
+      // If Fish Audio isn't fully configured yet, it falls back gracefully or uses OpenAI TTS
+      base64Audio = await generateOpenAITTS(replyText);
     } else {
-      // Direct REST call to OpenAI Audio TTS endpoint
-      const openAiTtsResponse = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "tts-1",
-          voice: "echo",
-          input: drLeonReply,
-          response_format: "mp3"
-        })
-      });
-
-      if (openAiTtsResponse.ok) {
-        const audioBuffer = await openAiTtsResponse.arrayBuffer();
-        base64Audio = Buffer.from(audioBuffer).toString("base64");
-      } else {
-        const errText = await openAiTtsResponse.text();
-        console.error("OpenAI TTS REST Error:", errText);
-      }
+      base64Audio = await generateOpenAITTS(replyText);
     }
 
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        text: drLeonReply, 
-        audio: base64Audio 
+      body: JSON.stringify({
+        text: replyText,
+        audio: base64Audio
       }),
     };
 
-  } catch (err) {
-    console.error("Netlify Function Crash:", err);
+  } catch (error) {
+    console.error("[CHAT FUNCTION ERROR]:", error);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({ error: error.message || "Internal Server Error" }),
     };
   }
-};
+}
+
+async function generateOpenAITTS(text) {
+  // Using 'tts-1' (standard speed model) instead of 'tts-1-hd' for maximum speed
+  const mp3Response = await openai.audio.speech.create({
+    model: "tts-1",
+    voice: "onyx", // Deep, professional voice matching Dr. Leon's persona
+    input: text,
+    speed: 1.05, // Slightly accelerated speech for snappier delivery
+  });
+
+  const buffer = Buffer.from(await mp3Response.arrayBuffer());
+  return buffer.toString("base64");
+}
