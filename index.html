@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ask Dr. Leon | Vibe Coding AI Platform</title>
+    <title>Ask Dr. Leon </title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Main Stylesheet -->
@@ -46,17 +46,17 @@
             <div id="listening-indicator" class="listening-indicator" style="display:none;">Listening to your microphone...</div>
         </section>
 
-        <!-- PANE 3: Avatar Pane -->
+       <!-- PANE 3: Avatar Pane -->
         <section class="avatar-pane">
             <div class="avatar-wrapper">
                 <!-- Static FAQ Video Player (Used for instant matching) -->
-                <video id="faq-video" playsinline webkit-playsinline style="width:100%; height:100%; object-fit:cover; display:none;"></video>
+                <video id="faq-video" playsinline webkit-playsinline style="width:100%; height:100%; object-fit:contain; display:none;"></video>
                 
                 <!-- Live Simli WebRTC Stream Elements -->
-                <video id="simli-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                <video id="simli-video" autoplay playsinline style="width:100%; height:100%; object-fit:contain;"></video>
                 
                 <!-- Default Avatar Image (Shown in Audio Mode) -->
-                <img id="default-avatar-img" src="assets/images/Default-image.jpg" alt="Dr. Leon Avatar" style="width:100%; height:100%; object-fit:cover; display:none;" />
+                <img id="default-avatar-img" src="assets/images/Default-image.jpg" alt="Dr. Leon Avatar" style="width:100%; height:100%; object-fit:contain; display:none;" />
 
                 <audio id="simli-audio" autoplay></audio>
 
@@ -66,15 +66,11 @@
 
         <!-- PANE 4: Graphics / FAQ Pane -->
         <section class="graphics-pane">
-            <div class="topic-menu-label">Quick FAQ Topics</div>
-            <div id="topic-pills" class="topic-pills">
-                <!-- Hardcoded FAQ Pills to guarantee visibility -->
-                <button class="pill-btn primary" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
-                <button class="pill-btn" data-topic="Netlify Serverless Setup">Netlify Serverless Setup</button>
-                <button class="pill-btn" data-topic="Fish Audio Cloned Voice">Fish Audio Cloned Voice</button>
-                <button class="pill-btn" data-topic="Simli WebRTC Stream">Simli WebRTC Stream</button>
-                <button class="pill-btn" data-topic="Fuse.js Fuzzy Matching">Fuse.js Fuzzy Matching</button>
-                <button class="pill-btn" data-topic="Media Production Workflow">Media Production Workflow</button>
+            <div class="topic-box-wrapper">
+                <div class="topic-menu-label">Quick FAQ Topics</div>
+                <div id="topic-pills" class="topic-pills">
+                    <!-- Dynamically populated via script.js -->
+                </div>
             </div>
         </section>
 
