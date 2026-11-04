@@ -22,12 +22,17 @@ exports.handler = async function(event, context) {
             };
         }
 
-        const response = await fetch('https://api.simli.ai/compose/ice', {
-            method: 'GET',
+        const response = await fetch('https://api.simli.ai/compose/token', {
+            method: 'POST',
             headers: {
                 'x-simli-api-key': apiKey,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                faceId: process.env.SIMLI_FACE_ID || "bf13113a-355a-4d97-8b90-4edccd1da7b2",
+                maxSessionLength: 600,
+                maxIdleTime: 180
+            })
         });
 
         const responseText = await response.text();
@@ -41,12 +46,7 @@ exports.handler = async function(event, context) {
             };
         }
 
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            data = { raw: responseText };
-        }
+        const data = JSON.parse(responseText);
 
         return {
             statusCode: 200,
