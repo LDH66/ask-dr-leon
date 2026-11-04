@@ -48,7 +48,6 @@
         <!-- PANE 3: Avatar Pane -->
         <section class="pane avatar-pane">
             <div class="avatar-wrapper">
-                <!-- Simli WebRTC Video Stream & Hidden Audio Stream -->
                 <video id="simli-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; z-index: 2; position: absolute; top: 0; left: 0; border-radius: inherit;"></video>
                 <audio id="simli-audio" autoplay style="display: none;"></audio>
                 <div class="avatar-glow"></div>
@@ -72,8 +71,8 @@
 
     </div>
 
-    <!-- Official Simli Client SDK from unpkg -->
-    <script src="https://unpkg.com/simli-client@latest/dist/simli-client.umd.js"></script>
-    <script src="js/script.js?v=2.7"></script>
+    <!-- Official Simli Client SDK from unpkg standard bundle -->
+    <script src="https://unpkg.com/simli-client/dist/index.js"></script>
+    <script src="js/script.js?v=2.8"></script>
 </body>
 </html>
