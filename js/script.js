@@ -10,7 +10,7 @@ let currentVoiceEngine = "generic";
 let simliClient = null;
 let audioCtx = null;
 let isAudioUnlocked = false;
-let currentFetchController = null; // Tracks active chat requests to cancel older ones
+let currentFetchController = null;
 
 async function initSimli() {
   if (simliClient) {
@@ -152,18 +152,23 @@ function stopCurrentSpeech() {
         audioElement.currentTime = 0;
     }
 
+    // Official Simli SDK method to drop all queued audio and freeze avatar immediately
     if (simliClient) {
         try {
-            if (typeof simliClient.clearAudioData === 'function') {
+            if (typeof simliClient.ClearBuffer === 'function') {
+                simliClient.ClearBuffer(); // Official Simli SDK method
+            } else if (typeof simliClient.clearBuffer === 'function') {
+                simliClient.clearBuffer();
+            } else if (typeof simliClient.clearAudioData === 'function') {
                 simliClient.clearAudioData();
             }
         } catch (e) {
-            console.warn("[SIMLI] Interrupt buffer clear warning:", e);
+            console.warn("[SIMLI] Buffer clear warning:", e);
         }
     }
 }
 
-async function sendAudioToSimli(base64Audio) {
+async function sendAudioToSimli(base64Audio, isImmediate = false) {
     if (!simliClient) return;
     try {
         if (!audioCtx) {
@@ -189,7 +194,14 @@ async function sendAudioToSimli(base64Audio) {
             pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
         
-        simliClient.sendAudioData(new Uint8Array(pcm16.buffer));
+        const audioChunkData = new Uint8Array(pcm16.buffer);
+
+        // Use sendAudioDataImmediate if available to drop lingering queue and play new audio instantly
+        if (isImmediate && typeof simliClient.sendAudioDataImmediate === 'function') {
+            simliClient.sendAudioDataImmediate(audioChunkData);
+        } else {
+            simliClient.sendAudioData(audioChunkData);
+        }
 
         const audioElement = document.getElementById("simli-audio");
         if (audioElement) {
@@ -206,8 +218,7 @@ function queueAudioStream(base64Audio) {
         console.error("[DR. LEON ERROR] No base64 audio returned!");
         return;
     }
-
-    sendAudioToSimli(base64Audio);
+    sendAudioToSimli(base64Audio, true); // true forces immediate flush of old buffers
 }
 
 function setupNetlifyMicrophone() {
@@ -361,14 +372,23 @@ function bindTopicPills() {
 }
 
 async function processUserQuery(query, isFollowUp = false) {
-    // 1. Cancel any in-flight backend requests from previous rapid clicks
+    // 1. Cancel any previous pending request immediately
     if (currentFetchController) {
         currentFetchController.abort();
     }
     currentFetchController = new AbortController();
 
-    // 2. Stop current speech and avatar movement immediately so there's zero overlap
+    // 2. Kill current audio & clear Simli buffer instantly so mouth stops moving right away
     stopCurrentSpeech();
+
+    // 3. Show loading state in input placeholder so user knows it's working
+    const userInput = document.getElementById('userInput');
+    const originalPlaceholder = userInput ? userInput.placeholder : "";
+    if (userInput) {
+        userInput.value = "";
+        userInput.placeholder = "Dr. Leon is thinking...";
+        userInput.disabled = true;
+    }
 
     if (!isFollowUp) {
         hasAskedFirstQuestion = true;
@@ -382,13 +402,18 @@ async function processUserQuery(query, isFollowUp = false) {
         const response = await fetch('/.netlify/functions/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            signal: currentFetchController.signal, // Attach abort signal
+            signal: currentFetchController.signal,
             body: JSON.stringify({ 
                 prompt: query, 
                 isFollowUp: isFollowUp,
                 useFishAudio: (currentVoiceEngine === "fishaudio")
             })
         });
+
+        if (userInput) {
+            userInput.placeholder = originalPlaceholder;
+            userInput.disabled = false;
+        }
 
         if (response.ok) {
             const data = await response.json();
@@ -398,8 +423,12 @@ async function processUserQuery(query, isFollowUp = false) {
             console.error("[DR. LEON ERROR] Server returned status:", response.status);
         }
     } catch (error) {
+        if (userInput) {
+            userInput.placeholder = originalPlaceholder;
+            userInput.disabled = false;
+        }
         if (error.name === 'AbortError') {
-            console.log("[DR. LEON] Previous request superseded by a new user query.");
+            console.log("[DR. LEON] Previous request superseded by new click.");
         } else {
             console.error("[DR. LEON ERROR] Fetch error:", error);
         }
