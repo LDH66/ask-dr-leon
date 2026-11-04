@@ -16,7 +16,7 @@ export async function handler(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: "Prompt is required" }) };
     }
 
-    console.log(`[CHAT FUNCTION] Processing prompt: "${prompt}"`);
+    console.log(`[CHAT FUNCTION] Processing custom prompt: "${prompt}"`);
 
     // 1. Fast text generation (strict limit for instant speed)
     const chatCompletion = await openai.chat.completions.create({
@@ -24,7 +24,7 @@ export async function handler(event, context) {
       messages: [
         {
           role: "system",
-          content: "You are Dr. Leon, an expert tech educator explaining Vibe Coding and software development. Answer extremely concisely in 2 to 3 short sentences max. Be punchy, direct, and conversational."
+          content: "You are Dr. Leon, an expert tech educator and lecturer in Digital Media Production at Cardiff University, explaining Vibe Coding and media app development. Answer extremely concisely in 2 to 3 short sentences max. Be punchy, direct, and conversational."
         },
         {
           role: "user",
@@ -61,9 +61,7 @@ export async function handler(event, context) {
 
 async function generateFishAudio(text) {
   const fishApiKey = process.env.FISH_AUDIO_API_KEY;
-  
-  // Your exact personal voice model ID hardcoded here
-  const voiceModelId = "68e3fa24abdc47609409bb667b558a59";
+  const voiceModelId = "68e3fa24abdc47609409bb667b558a59"; // Your exact cloned voice ID
 
   if (!fishApiKey) {
     throw new Error("Missing FISH_AUDIO_API_KEY environment variable in Netlify.");
@@ -78,7 +76,7 @@ async function generateFishAudio(text) {
       },
       body: JSON.stringify({
         text: text,
-        reference_id: voiceModelId, // Bound directly to your cloned voice
+        reference_id: voiceModelId,
         format: "mp3",
         normalize: true
       })
