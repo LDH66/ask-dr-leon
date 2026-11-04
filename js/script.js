@@ -43,7 +43,6 @@ async function initSimli() {
     simliClient.on("start", () => {
       console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
       
-      // Ensure audio element is active, unmuted, and playing LiveKit track
       if (audioElement) {
         audioElement.muted = false;
         audioElement.volume = 1.0;
@@ -107,21 +106,30 @@ function setupVoiceToggle() {
     });
 }
 
-function playInstantFiller() {
-    return new Promise((resolve) => {
-        const fillerNum = getNextFillerNum();
-        const suffix = (currentVoiceEngine === "fishaudio") ? "leon" : "generic";
-        const fillerSrc = `audio/filler${fillerNum}_${suffix}.mp3`;
+function stopCurrentSpeech() {
+    // Stop local HTML audio elements
+    if (window.currentAudio) {
+        window.currentAudio.pause();
+        window.currentAudio.currentTime = 0;
+    }
+    
+    // Stop Simli/LiveKit audio stream output immediately
+    const audioElement = document.getElementById("simli-audio");
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+    }
 
-        if (window.currentAudio) {
-            window.currentAudio.pause();
+    if (simliClient) {
+        try {
+            // Clear current audio queue buffer on Simli client if supported
+            if (typeof simliClient.clearAudioData === 'function') {
+                simliClient.clearAudioData();
+            }
+        } catch (e) {
+            console.warn("[SIMLI] Interrupt buffer clear warning:", e);
         }
-
-        window.currentAudio = new Audio(fillerSrc);
-        window.currentAudio.onended = () => { resolve(); };
-        window.currentAudio.onerror = () => { resolve(); };
-        window.currentAudio.play().catch(() => { resolve(); });
-    });
+    }
 }
 
 // Helper to decode base64 audio into raw PCM16 stream for Simli Lip-Sync
@@ -171,6 +179,7 @@ function setupNetlifyMicrophone() {
 
     micBtn.addEventListener('click', async () => {
         if (!isRecording) {
+            stopCurrentSpeech(); // Interrupt current speech when user starts recording
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: { echoCancellation: true, noiseSuppression: true } 
@@ -281,7 +290,7 @@ function setupUIHandlers() {
 
     if (stopAudioBtn) {
         stopAudioBtn.addEventListener('click', () => {
-            if (window.currentAudio) window.currentAudio.pause();
+            stopCurrentSpeech();
         });
     }
 
@@ -312,6 +321,9 @@ function bindTopicPills() {
 }
 
 async function processUserQuery(query, isFollowUp = false) {
+    // INSTANT INTERRUPTION: Stop whatever Dr. Leon is currently saying
+    stopCurrentSpeech();
+
     if (!isFollowUp) {
         hasAskedFirstQuestion = true;
         lastAskedQuery = query;
