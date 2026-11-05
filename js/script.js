@@ -189,13 +189,14 @@ function setupModeToggle() {
             mediaModeBtn.textContent = "Mode: Video";
             mediaModeBtn.classList.add('leon-active');
 
-            if (simliVideo) simliVideo.style.display = 'block';
             if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
+            if (simliVideo) simliVideo.style.display = 'block';
 
             initSimli();
         }
     });
 }
+
 
 /**
  * ==========================================
@@ -224,8 +225,17 @@ function stopCurrentSpeech() {
     }
 
     const simliVideo = document.getElementById("simli-video");
-    if (simliVideo && currentMode === "video") {
-        simliVideo.style.display = 'block';
+    const defaultAvatarImg = document.getElementById("default-avatar-img");
+    
+    if (currentMode === "video") {
+        if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
+        if (simliVideo) simliVideo.style.display = 'block';
+    } else {
+        if (simliVideo) simliVideo.style.display = 'none';
+        if (defaultAvatarImg) {
+            defaultAvatarImg.src = "/assets/images/Default-image.jpg";
+            defaultAvatarImg.style.display = 'block';
+        }
     }
 
     if (simliClient && currentMode === "video") {
@@ -235,7 +245,6 @@ function stopCurrentSpeech() {
         } catch (e) {}
     }
 }
-
 
 /**
  * ==========================================
