@@ -501,7 +501,13 @@ function setupUIHandlers() {
     }
 
     if (stopAudioBtn) {
-        stopAudioBtn.addEventListener('click', () => stopCurrentSpeech());
+        stopAudioBtn.addEventListener('click', () => {
+            stopCurrentSpeech();
+            if (pausePlayIcon) {
+                // Reset icon back to Pause bars when stopped
+                pausePlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            }
+        });
     }
 
     if (pausePlayBtn && pausePlayIcon) {
@@ -522,14 +528,19 @@ function setupUIHandlers() {
 
             if (!targetMedia) return;
 
-            if (targetMedia.paused) {
+            // Check actual pause state
+            const isCurrentlyPaused = targetMedia.paused || targetMedia.ended;
+
+            if (isCurrentlyPaused) {
                 targetMedia.play().then(() => {
                     if (simliAudio && targetMedia === simliVideo) simliAudio.play().catch(e => {});
+                    // Switch icon to Pause (II bars)
                     pausePlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
                 }).catch(e => console.warn("[PAUSE/PLAY] Resume blocked:", e));
             } else {
                 targetMedia.pause();
                 if (simliAudio && targetMedia === simliVideo) simliAudio.pause();
+                // Switch icon to Play (▶ triangle)
                 pausePlayIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
             }
         });
