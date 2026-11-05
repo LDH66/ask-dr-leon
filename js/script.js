@@ -667,23 +667,23 @@ function updateRelatedTopics(queryKey) {
 
     let newPillsHTML = `<button class="pill-btn primary" data-topic="Tell me more">Tell me more</button>`;
 
-    if (queryKey.includes('vibe coding')) {
-        newPillsHTML += `
-            <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
-            <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
-            <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
-            <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
-            <button class="pill-btn" data-topic="What is HTML?">What is HTML?</button>
-        `;
-    } else {
-        newPillsHTML += `
-            <button class="pill-btn" data-topic="What is Vibe Coding?">What is Vibe Coding?</button>
-            <button class="pill-btn" data-topic="4-Part Prompt Formula">4-Part Prompt Formula</button>
-            <button class="pill-btn" data-topic="Connecting APIs">Connecting APIs</button>
-            <button class="pill-btn" data-topic="Prompt Engineering">Prompt Engineering</button>
-            <button class="pill-btn" data-topic="What is JavaScript?">What is JavaScript?</button>
-        `;
-    }
+    // Render the 10 selected questions/topics as pills
+    const topics = [
+        "What is Vibe Coding?",
+        "Do I need a Computer Science degree?",
+        "What is the role of JavaScript?",
+        "What are the best AI coding tools?",
+        "What is Prompt Engineering?",
+        "How does 4-Part Prompt Formula work?",
+        "How do I connect external web APIs?",
+        "How do I debug errors in my code?",
+        "How was this application built?",
+        "Who is Dr. Leon Hawthorne?"
+    ];
+
+    topics.forEach(topic => {
+        newPillsHTML += `<button class="pill-btn" data-topic="${topic}">${topic}</button>`;
+    });
 
     topicPillsContainer.innerHTML = newPillsHTML;
     bindTopicPills(); 
