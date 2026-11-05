@@ -65,11 +65,11 @@
                 <!-- Static FAQ Video Player (Used for instant matching) -->
                 <video id="faq-video" playsinline webkit-playsinline style="width:100%; height:100%; object-fit:contain; display:none;"></video>
                 
-                <!-- Live Simli WebRTC Stream Elements -->
-                <video id="simli-video" autoplay playsinline webkit-playsinline style="width:100%; height:100%; object-fit:contain;"></video>
-                
-                <!-- Default Avatar Image (Shown in Audio Mode) -->
-                <img id="default-avatar-img" src="assets/images/Default-image.jpg" alt="Dr. Leon Avatar" style="width:100%; height:100%; object-fit:contain; display:none;" />
+                <!-- Default Avatar Image (Shown by default as a fallback when video/Simli hasn't loaded yet) -->
+                <img id="default-avatar-img" src="/assets/images/default-lh.jpg" alt="Dr. Leon Avatar" style="width:100%; height:100%; object-fit:contain; display:block;" />
+
+                <!-- Live Simli WebRTC Stream Elements (Hidden initially until stream starts) -->
+                <video id="simli-video" autoplay playsinline webkit-playsinline style="width:100%; height:100%; object-fit:contain; display:none;"></video>
 
                 <audio id="simli-audio" autoplay></audio>
 
