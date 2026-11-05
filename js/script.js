@@ -18,7 +18,7 @@ export async function handler(event, context) {
 
     console.log(`[CHAT FUNCTION] Processing prompt: "${prompt}"`);
 
-    // Strict Out-of-Scope Guard Check (Catches politics, celebrities, weather, general trivia, etc.)
+    // Strict Out-of-Scope Guard Check
     const lowerPrompt = prompt.toLowerCase();
     const allowedKeywords = [
       "vibe", "coding", "javascript", "html", "css", "api", "prompt", "leon", 
@@ -26,7 +26,6 @@ export async function handler(event, context) {
       "git", "cursor", "netlify", "debug", "portfolio", "game", "mobile", "pwa"
     ];
     
-    // Check if the query is asking about common off-topic subjects or lacks any Vibe Coding/course keywords
     const isOffTopic = 
       lowerPrompt.includes("trump") || 
       lowerPrompt.includes("blair") || 
@@ -41,7 +40,6 @@ export async function handler(event, context) {
     if (isOffTopic && !isFollowUp) {
       replyText = "Sorry, I can't answer that. I can only answer questions about vibe coding and directly relevant subjects";
     } else {
-      // 1. Fast text generation for valid queries
       const chatCompletion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
@@ -63,7 +61,6 @@ export async function handler(event, context) {
 
     console.log(`[CHAT FUNCTION] Reply text: "${replyText}"`);
 
-    // 2. Generate audio using Fish Audio
     const base64Audio = await generateFishAudio(replyText);
 
     return {
