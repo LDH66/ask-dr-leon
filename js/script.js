@@ -180,7 +180,10 @@ function setupModeToggle() {
             }
 
             if (simliVideo) simliVideo.style.display = 'none';
-            if (defaultAvatarImg) defaultAvatarImg.style.display = 'block';
+            if (defaultAvatarImg) {
+                defaultAvatarImg.src = "/assets/images/Default-image.jpg";
+                defaultAvatarImg.style.display = 'block';
+            }
         } else {
             currentMode = "video";
             mediaModeBtn.textContent = "Mode: Video";
@@ -193,7 +196,6 @@ function setupModeToggle() {
         }
     });
 }
-
 
 /**
  * ==========================================
