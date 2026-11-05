@@ -12,6 +12,31 @@ let audioCtx = null;
 let isAudioUnlocked = false;
 let currentFetchController = null;
 
+// FAQ Data and Fuse.js instance
+let faqList = [];
+let fuseInstance = null;
+
+async function loadFaqsAndInitFuse() {
+    try {
+        const res = await fetch('/data/faqs.json');
+        if (res.ok) {
+            faqList = await res.json();
+            console.log(`[FAQS] Successfully loaded ${faqList.length} FAQs from /data/faqs.json`);
+            
+            const options = {
+                keys: ['button_label', 'question', 'keywords', 'answer'],
+                includeScore: true,
+                threshold: 0.4 
+            };
+            fuseInstance = new Fuse(faqList, options);
+        } else {
+            console.warn("[FAQS] Could not load /data/faqs.json, status:", res.status);
+        }
+    } catch (err) {
+        console.error("[FAQS] Error fetching /data/faqs.json:", err);
+    }
+}
+
 async function initSimli() {
   if (currentMode !== "video") return; // Do not initialize Simli if user is in Audio-only mode
 
@@ -79,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
     console.log("[DR. LEON] Pipeline Active 🚀");
     console.log("--------------------------------------------------");
+    loadFaqsAndInitFuse();
     initSimli();
     setupNetlifyMicrophone();
     setupUIHandlers();
@@ -172,6 +198,18 @@ function stopCurrentSpeech() {
         audioElement.currentTime = 0;
     }
 
+    const faqVideo = document.getElementById("faq-video");
+    if (faqVideo) {
+        faqVideo.pause();
+        faqVideo.currentTime = 0;
+        faqVideo.style.display = 'none';
+    }
+
+    const simliVideo = document.getElementById("simli-video");
+    if (simliVideo && currentMode === "video") {
+        simliVideo.style.display = 'block';
+    }
+
     if (simliClient && currentMode === "video") {
         try {
             if (typeof simliClient.ClearBuffer === 'function') {
@@ -183,6 +221,43 @@ function stopCurrentSpeech() {
             }
         } catch (e) {
             console.warn("[SIMLI] Buffer clear warning:", e);
+        }
+    }
+}
+
+// Play local pre-recorded assets when an FAQ match is found (>= 70% confidence / score <= 0.3)
+async function playLocalFaqAsset(faqItem) {
+    stopCurrentSpeech();
+
+    const simliVideo = document.getElementById("simli-video");
+    const faqVideo = document.getElementById("faq-video");
+    const defaultAvatarImg = document.getElementById("default-avatar-img");
+
+    if (currentMode === "video") {
+        // Video Mode: play pre-recorded .mp4 video file from assets/video/
+        if (faqVideo && faqItem.video_file) {
+            if (simliVideo) simliVideo.style.display = 'none';
+            if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
+            
+            faqVideo.src = faqItem.video_file;
+            faqVideo.style.display = 'block';
+            try {
+                await faqVideo.play();
+                console.log(`[LOCAL ASSET] Playing video: ${faqItem.video_file}`);
+            } catch (e) {
+                console.warn("[LOCAL ASSET] Video play error:", e);
+            }
+        }
+    } else {
+        // Audio Mode: play pre-recorded .mp3 audio file from assets/audio/ with static image
+        if (defaultAvatarImg) defaultAvatarImg.style.display = 'block';
+        if (simliVideo) simliVideo.style.display = 'none';
+        if (faqVideo) faqVideo.style.display = 'none';
+
+        if (faqItem.audio_file) {
+            window.currentAudio = new Audio(faqItem.audio_file);
+            window.currentAudio.play().catch(e => console.warn("[LOCAL ASSET] Audio play error:", e));
+            console.log(`[LOCAL ASSET] Playing audio: ${faqItem.audio_file}`);
         }
     }
 }
@@ -440,6 +515,21 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
+    // 1. Check Fuzzy Match against loaded FAQs (Threshold <= 0.30 represents >= 70% match)
+    if (fuseInstance && faqList.length > 0 && !isFollowUp) {
+        const results = fuseInstance.search(query);
+        if (results.length > 0 && results[0].score <= 0.30) {
+            console.log(`[FUZZY MATCH] Found match "${results[0].item.button_label}" with score ${results[0].score}`);
+            if (userInput) {
+                userInput.placeholder = originalPlaceholder;
+                userInput.disabled = false;
+            }
+            await playLocalFaqAsset(results[0].item);
+            return;
+        }
+    }
+
+    // 2. Fallback to Netlify LLM + Fish Audio serverless function if no strong local FAQ match
     try {
         const response = await fetch('/.netlify/functions/chat', {
             method: 'POST',
