@@ -475,6 +475,8 @@ async function sendAudioToBackend(audioBlob) {
 function setupUIHandlers() {
     const submitBtn = document.getElementById('submitBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
+    const pausePlayBtn = document.getElementById('pausePlayBtn');
+    const pausePlayIcon = document.getElementById('pausePlayIcon');
     const userInput = document.getElementById('userInput');
 
     if (submitBtn && userInput) {
@@ -500,6 +502,38 @@ function setupUIHandlers() {
 
     if (stopAudioBtn) {
         stopAudioBtn.addEventListener('click', () => stopCurrentSpeech());
+    }
+
+    if (pausePlayBtn && pausePlayIcon) {
+        pausePlayBtn.addEventListener('click', () => {
+            const faqVideo = document.getElementById('faq-video');
+            const simliAudio = document.getElementById('simli-audio');
+            const activeAudio = window.currentAudio;
+
+            let targetMedia = null;
+            if (faqVideo && faqVideo.style.display === 'block' && !faqVideo.paused) {
+                targetMedia = faqVideo;
+            } else if (faqVideo && faqVideo.style.display === 'block' && faqVideo.ended === false && faqVideo.currentTime > 0) {
+                targetMedia = faqVideo;
+            } else if (activeAudio && !activeAudio.paused) {
+                targetMedia = activeAudio;
+            } else if (simliAudio && !simliAudio.paused) {
+                targetMedia = simliAudio;
+            } else {
+                targetMedia = activeAudio || faqVideo || simliAudio;
+            }
+
+            if (!targetMedia) return;
+
+            if (targetMedia.paused) {
+                targetMedia.play().then(() => {
+                    pausePlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+                }).catch(e => console.warn("[PAUSE/PLAY] Resume blocked:", e));
+            } else {
+                targetMedia.pause();
+                pausePlayIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+            }
+        });
     }
 
     bindTopicPills();
