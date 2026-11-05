@@ -58,10 +58,15 @@ async function loadFaqsAndInitFuse() {
  * SECTION 3: SIMLI AVATAR INITIALIZATION
  * ==========================================
  * Fetches a secure WebRTC session token from Netlify functions 
- * and starts the live Simli video avatar stream.
+ * and starts the live Simli video avatar stream with strict cleanup.
  */
+let isInitializingSimli = false;
+
 async function initSimli() {
   if (currentMode !== "video") return;
+  if (isInitializingSimli) return; // Prevent concurrent overlap calls
+
+  isInitializingSimli = true;
 
   if (simliClient) {
     try {
@@ -70,7 +75,7 @@ async function initSimli() {
       console.warn("[SIMLI] Previous client cleanup warning:", e);
     }
     simliClient = null;
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Ensure socket teardown
   }
 
   try {
@@ -78,12 +83,19 @@ async function initSimli() {
     const data = await res.json();
     const sessionToken = data.session_token || data.token;
 
-    if (!sessionToken) return;
+    if (!sessionToken) {
+      isInitializingSimli = false;
+      return;
+    }
 
     const videoElement = document.getElementById("simli-video");
     const audioElement = document.getElementById("simli-audio");
+    const defaultAvatarImg = document.getElementById("default-avatar-img");
 
-    if (!videoElement || !audioElement) return;
+    if (!videoElement || !audioElement) {
+      isInitializingSimli = false;
+      return;
+    }
 
     simliClient = new SimliClient(
       sessionToken,
@@ -100,14 +112,24 @@ async function initSimli() {
         audioElement.volume = 1.0;
         audioElement.play().catch(e => {});
       }
+      if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
+      if (videoElement) videoElement.style.display = 'block';
     });
 
     await simliClient.start();
   } catch (err) {
     console.error("[SIMLI ERROR] Initialization failed:", err);
+    const videoElement = document.getElementById("simli-video");
+    const defaultAvatarImg = document.getElementById("default-avatar-img");
+    if (videoElement) videoElement.style.display = 'none';
+    if (defaultAvatarImg) {
+        defaultAvatarImg.src = "/assets/images/Default-image.jpg";
+        defaultAvatarImg.style.display = 'block';
+    }
+  } finally {
+    isInitializingSimli = false;
   }
 }
-
 
 /**
  * ==========================================
