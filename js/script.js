@@ -121,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("[DR. LEON] Pipeline Active 🚀");
     console.log("--------------------------------------------------");
     loadFaqsAndInitFuse();
-    initSimli();
     setupNetlifyMicrophone();
     setupUIHandlers();
     setupModeToggle();
@@ -141,6 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
+        
+        // Initialize Simli only after user interaction unlocks mobile media pipelines
+        if (!simliClient && currentMode === "video") {
+            initSimli();
+        }
+
         window.removeEventListener('click', unlockAudio);
         window.removeEventListener('touchstart', unlockAudio);
         window.removeEventListener('keydown', unlockAudio);
@@ -695,7 +700,7 @@ function updateRelatedTopics(queryKey) {
  * SECTION 16: MOBILE AUTO-PLAY & GESTURE BYPASS FOR WEBRTC
  * ==========================================
  * Automatically unlocks media playback on iOS, Chrome, and Safari mobile browsers 
- * upon the user's first tap or click interaction.
+ * upon the user's first tap or click interaction, ensuring WebKit audio context resumption.
  */
 document.addEventListener('click', function unlockAudioAndVideo() {
     const audioEl = document.getElementById('simli-audio');
