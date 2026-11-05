@@ -1,3 +1,10 @@
+/**
+ * ==========================================
+ * SECTION 1: IMPORTS & GLOBAL STATE VARIABLES
+ * ==========================================
+ * Imports the Simli WebRTC client and initializes global 
+ * tracking variables for recording, modes, audio context, and Fuse.js.
+ */
 import { SimliClient, LogLevel } from "https://cdn.jsdelivr.net/npm/simli-client@latest/+esm";
 
 let mediaRecorder;
@@ -16,6 +23,14 @@ let currentFetchController = null;
 let faqList = [];
 let fuseInstance = null;
 
+
+/**
+ * ==========================================
+ * SECTION 2: FAQ & FUSE.JS INITIALIZATION
+ * ==========================================
+ * Asynchronously fetches local FAQ items from data/faqs.json 
+ * and sets up the Fuse.js fuzzy search engine instance.
+ */
 async function loadFaqsAndInitFuse() {
     try {
         const res = await fetch('/data/faqs.json');
@@ -37,6 +52,14 @@ async function loadFaqsAndInitFuse() {
     }
 }
 
+
+/**
+ * ==========================================
+ * SECTION 3: SIMLI AVATAR INITIALIZATION
+ * ==========================================
+ * Fetches a secure WebRTC session token from Netlify functions 
+ * and starts the live Simli video avatar stream.
+ */
 async function initSimli() {
   if (currentMode !== "video") return;
 
@@ -85,6 +108,14 @@ async function initSimli() {
   }
 }
 
+
+/**
+ * ==========================================
+ * SECTION 4: DOM CONTENT LOADED & AUDIO UNLOCK
+ * ==========================================
+ * Fires when the webpage loads. Bootstraps core modules 
+ * and sets up global event listeners to unlock browser audio restrictions.
+ */
 document.addEventListener('DOMContentLoaded', () => {
     console.log("--------------------------------------------------");
     console.log("[DR. LEON] Pipeline Active 🚀");
@@ -120,6 +151,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('keydown', unlockAudio);
 });
 
+
+/**
+ * ==========================================
+ * SECTION 5: MODE TOGGLE (VIDEO / AUDIO)
+ * ==========================================
+ * Switches the interface between live Simli video avatar mode 
+ * and standard audio-only mode.
+ */
 function setupModeToggle() {
     const mediaModeBtn = document.getElementById('mediaModeBtn');
     const simliVideo = document.getElementById('simli-video');
@@ -155,6 +194,14 @@ function setupModeToggle() {
     });
 }
 
+
+/**
+ * ==========================================
+ * SECTION 6: SPEECH & PLAYBACK STOPPER
+ * ==========================================
+ * Immediately halts any active audio playback, video playback, 
+ * or microphone buffering across the site.
+ */
 function stopCurrentSpeech() {
     if (window.currentAudio) {
         window.currentAudio.pause();
@@ -187,6 +234,14 @@ function stopCurrentSpeech() {
     }
 }
 
+
+/**
+ * ==========================================
+ * SECTION 7: LOCAL FAQ ASSET PLAYER
+ * ==========================================
+ * Plays pre-recorded local `.mp4` video assets or `.mp3` audio assets 
+ * matching a selected FAQ item.
+ */
 async function playLocalFaqAsset(faqItem) {
     stopCurrentSpeech();
 
@@ -226,6 +281,14 @@ async function playLocalFaqAsset(faqItem) {
     }
 }
 
+
+/**
+ * ==========================================
+ * SECTION 8: DYNAMIC AUDIO PLAYBACK (LLM)
+ * ==========================================
+ * Handles streaming base64 audio chunks into Simli's audio buffer 
+ * or fallback HTML5 audio elements for live LLM responses.
+ */
 async function handleAudioPlayback(base64Audio) {
     if (!base64Audio) return;
 
@@ -283,6 +346,13 @@ async function handleAudioPlayback(base64Audio) {
     }
 }
 
+
+/**
+ * ==========================================
+ * SECTION 9: BASE64 TO BLOB CONVERTER
+ * ==========================================
+ * Helper utility to convert base64 audio strings into playable Blob objects.
+ */
 function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     const byteCharacters = atob(b64Data);
     const byteArrays = [];
@@ -295,6 +365,14 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     return new Blob(byteArrays, { type: contentType });
 }
 
+
+/**
+ * ==========================================
+ * SECTION 10: NETLIFY MICROPHONE RECORDING
+ * ==========================================
+ * Manages voice recording via browser MediaRecorder API 
+ * and sends captured audio blobs to the backend transcription function.
+ */
 function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
@@ -360,6 +438,13 @@ function setupNetlifyMicrophone() {
     });
 }
 
+
+/**
+ * ==========================================
+ * SECTION 11: AUDIO TRANSCRIPTION SENDER
+ * ==========================================
+ * Uploads recorded audio to Netlify serverless transcription endpoint.
+ */
 async function sendAudioToBackend(audioBlob) {
     try {
         const reader = new FileReader();
@@ -380,6 +465,13 @@ async function sendAudioToBackend(audioBlob) {
     }
 }
 
+
+/**
+ * ==========================================
+ * SECTION 12: UI INPUT & BUTTON HANDLERS
+ * ==========================================
+ * Binds click and keypress listeners to text input submissions and audio controls.
+ */
 function setupUIHandlers() {
     const submitBtn = document.getElementById('submitBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
@@ -413,6 +505,13 @@ function setupUIHandlers() {
     bindTopicPills();
 }
 
+
+/**
+ * ==========================================
+ * SECTION 13: TOPIC PILL EVENT BINDINGS
+ * ==========================================
+ * Attaches click handlers to suggested topic pills in the UI.
+ */
 function bindTopicPills() {
     const topicPills = document.querySelectorAll('.pill-btn');
     const userInput = document.getElementById('userInput');
@@ -430,13 +529,20 @@ function bindTopicPills() {
             } else {
                 hasAskedFirstQuestion = true;
                 if (userInput) userInput.value = topic;
-                // Route button clicks through the exact same fuzzy matching query processor
                 processUserQuery(topic, false);
             }
         });
     });
 }
 
+
+/**
+ * ==========================================
+ * SECTION 14: USER QUERY PROCESSOR & ROUTER
+ * ==========================================
+ * Core routing pipeline: checks local Fuse.js FAQ matches first, 
+ * then falls back to the Netlify LLM chat function if no local asset matches.
+ */
 async function processUserQuery(query, isFollowUp = false) {
     if (currentFetchController) currentFetchController.abort();
     currentFetchController = new AbortController();
@@ -506,6 +612,13 @@ async function processUserQuery(query, isFollowUp = false) {
     }
 }
 
+
+/**
+ * ==========================================
+ * SECTION 15: DYNAMIC RELATED TOPICS UPDATER
+ * ==========================================
+ * Updates and renders relevant topic recommendation pills in the UI based on conversation context.
+ */
 function updateRelatedTopics(queryKey) {
     const topicPillsContainer = document.getElementById('topicPills');
     if (!topicPillsContainer) return;
