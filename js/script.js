@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * SECTION 5: MODE TOGGLE (VIDEO / AUDIO)
  * ==========================================
  * Switches the interface between live Simli video avatar mode 
- * and standard audio-only mode.
+ * and standard audio-only mode with correct fallback assets.
  */
 function setupModeToggle() {
     const mediaModeBtn = document.getElementById('mediaModeBtn');
@@ -203,7 +203,7 @@ function setupModeToggle() {
 
             if (simliVideo) simliVideo.style.display = 'none';
             if (defaultAvatarImg) {
-                defaultAvatarImg.src = "/assets/images/Default-image.jpg";
+                defaultAvatarImg.src = "/assets/images/Default-image.jpg"; // Audio mode image
                 defaultAvatarImg.style.display = 'block';
             }
         } else {
@@ -211,7 +211,10 @@ function setupModeToggle() {
             mediaModeBtn.textContent = "Mode: Video";
             mediaModeBtn.classList.add('leon-active');
 
-            if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
+            if (defaultAvatarImg) {
+                defaultAvatarImg.src = "/assets/images/default-lh.jpg"; // Video mode fallback image
+                defaultAvatarImg.style.display = 'none';
+            }
             if (simliVideo) simliVideo.style.display = 'block';
 
             initSimli();
@@ -250,7 +253,10 @@ function stopCurrentSpeech() {
     const defaultAvatarImg = document.getElementById("default-avatar-img");
     
     if (currentMode === "video") {
-        if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
+        if (defaultAvatarImg) {
+            defaultAvatarImg.src = "/assets/images/default-lh.jpg";
+            defaultAvatarImg.style.display = 'none';
+        }
         if (simliVideo) simliVideo.style.display = 'block';
     } else {
         if (simliVideo) simliVideo.style.display = 'none';
@@ -267,7 +273,6 @@ function stopCurrentSpeech() {
         } catch (e) {}
     }
 }
-
 /**
  * ==========================================
  * SECTION 7: LOCAL FAQ ASSET PLAYER
