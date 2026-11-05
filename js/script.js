@@ -101,7 +101,7 @@ async function initSimli() {
         audioElement.volume = 1.0;
         audioElement.play().catch(e => {});
       }
-      // Switch visibility from fallback image to live video stream once started
+      // Ensure fallback image is hidden and video stream is visible
       if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
       if (videoElement) videoElement.style.display = 'block';
     });
@@ -109,7 +109,6 @@ async function initSimli() {
     await simliClient.start();
   } catch (err) {
     console.error("[SIMLI ERROR] Initialization failed:", err);
-    // Fallback to static image if initialization errors out
     const videoElement = document.getElementById("simli-video");
     const defaultAvatarImg = document.getElementById("default-avatar-img");
     if (videoElement) videoElement.style.display = 'none';
@@ -150,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
             audioCtx.resume();
         }
         
-        // Initialize Simli only after user interaction unlocks mobile media pipelines
         if (!simliClient && currentMode === "video") {
             initSimli();
         }
@@ -322,4 +320,411 @@ async function handleAudioPlayback(base64Audio) {
     if (currentMode === "video" && simliClient) {
         try {
             if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            }
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+
+            const binaryString = atob(base64Audio);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+
+            const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
+            const channelData = audioBuffer.getChannelData(0); 
+            
+            const pcm16 = new Int16Array(channelData.length);
+            for (let i = 0; i < channelData.length; i++) {
+                let s = Math.max(-1, Math.min(1, channelData[i]));
+                pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            
+            const audioChunkData = new Uint8Array(pcm16.buffer);
+            if (typeof simliClient.sendAudioDataImmediate === 'function') {
+                simliClient.sendAudioDataImmediate(audioChunkData);
+            } else {
+                simliClient.sendAudioData(audioChunkData);
+            }
+
+            if (audioElement) audioElement.play().catch(e => {});
+        } catch (e) {
+            console.warn("[SIMLI] PCM conversion fallback:", e);
+        }
+    } else {
+        if (window.currentAudio) window.currentAudio.pause();
+        const audioBlob = b64toBlob(base64Audio, 'audio/mp3');
+        const audioUrl = URL.createObjectURL(audioBlob);
+        window.currentAudio = new Audio(audioUrl);
+        window.currentAudio.play().catch(e => {});
+    }
+}
+
+
+/**
+ * ==========================================
+ * SECTION 9: BASE64 TO BLOB CONVERTER
+ * ==========================================
+ * Helper utility to convert base64 audio strings into playable Blob objects.
+ */
+function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+        byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+}
+
+
+/**
+ * ==========================================
+ * SECTION 10: NETLIFY MICROPHONE RECORDING
+ * ==========================================
+ * Manages voice recording via browser MediaRecorder API 
+ * and sends captured audio blobs to the backend transcription function.
+ */
+function setupNetlifyMicrophone() {
+    const micBtn = document.getElementById('micBtn');
+    const listeningIndicator = document.getElementById('listeningIndicator');
+
+    if (!micBtn) return;
+    micBtn.style.display = 'flex';
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+
+    micBtn.addEventListener('click', async () => {
+        if (!isRecording) {
+            stopCurrentSpeech(); 
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: true, noiseSuppression: true } 
+                });
+
+                let options = { mimeType: 'audio/mp4' };
+                if (!MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/webm' };
+
+                mediaRecorder = new MediaRecorder(stream, options);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
+                    
+                    if (listeningIndicator) {
+                        listeningIndicator.textContent = "Processing audio...";
+                        listeningIndicator.style.display = 'block';
+                    }
+
+                    const transcribedText = await sendAudioToBackend(audioBlob);
+                    
+                    if (transcribedText) {
+                        const userInput = document.getElementById('userInput');
+                        if (userInput) userInput.value = transcribedText;
+                        hasAskedFirstQuestion = true;
+                        processUserQuery(transcribedText, false);
+                    }
+                    
+                    if (listeningIndicator) listeningIndicator.style.display = 'none';
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add('listening');
+                if (listeningIndicator) {
+                    listeningIndicator.textContent = "Listening... Tap mic again to send.";
+                    listeningIndicator.style.display = 'block';
+                }
+            } catch (err) {
+                alert("Microphone access denied or unsupported.");
+            }
+        } else {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+            isRecording = false;
+            micBtn.classList.remove('listening');
+        }
+    });
+}
+
+
+/**
+ * ==========================================
+ * SECTION 11: AUDIO TRANSCRIPTION SENDER
+ * ==========================================
+ * Uploads recorded audio to Netlify serverless transcription endpoint.
+ */
+async function sendAudioToBackend(audioBlob) {
+    try {
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        return new Promise((resolve) => {
+            reader.onloadend = async () => {
+                const base64Audio = reader.result.split(',')[1];
+                const response = await fetch('/.netlify/functions/transcribe', {
+                    method: 'POST',
+                    body: base64Audio
+                });
+                const data = await response.json();
+                resolve(data.text);
+            };
+        });
+    } catch (error) {
+        return null;
+    }
+}
+
+
+/**
+ * ==========================================
+ * SECTION 12: UI INPUT & BUTTON HANDLERS
+ * ==========================================
+ * Binds click and keypress listeners to text input submissions, audio controls, and the pause/play toggle.
+ */
+function setupUIHandlers() {
+    const submitBtn = document.getElementById('submitBtn');
+    const stopAudioBtn = document.getElementById('stopAudioBtn');
+    const pausePlayBtn = document.getElementById('pausePlayBtn');
+    const pausePlayIcon = document.getElementById('pausePlayIcon');
+    const userInput = document.getElementById('userInput');
+
+    if (submitBtn && userInput) {
+        submitBtn.addEventListener('click', () => {
+            const query = userInput.value.trim();
+            if (query) {
+                hasAskedFirstQuestion = true;
+                processUserQuery(query, false);
+            }
+        });
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = userInput.value.trim();
+                if (query) {
+                    userInput.blur();
+                    hasAskedFirstQuestion = true;
+                    processUserQuery(query, false);
+                }
+            }
+        });
+    }
+
+    if (stopAudioBtn) {
+        stopAudioBtn.addEventListener('click', () => {
+            stopCurrentSpeech();
+            if (pausePlayIcon) {
+                pausePlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            }
+        });
+    }
+
+    if (pausePlayBtn && pausePlayIcon) {
+        pausePlayBtn.addEventListener('click', () => {
+            const faqVideo = document.getElementById('faq-video');
+            const simliVideo = document.getElementById('simli-video');
+            const simliAudio = document.getElementById('simli-audio');
+            const activeAudio = window.currentAudio;
+
+            let targetMedia = null;
+            if (faqVideo && faqVideo.style.display === 'block') {
+                targetMedia = faqVideo;
+            } else if (simliVideo && simliVideo.style.display === 'block') {
+                targetMedia = simliVideo;
+            } else {
+                targetMedia = activeAudio || simliAudio;
+            }
+
+            if (!targetMedia) return;
+
+            const isCurrentlyPaused = targetMedia.paused || targetMedia.ended;
+
+            if (isCurrentlyPaused) {
+                targetMedia.play().then(() => {
+                    if (simliAudio && targetMedia === simliVideo) simliAudio.play().catch(e => {});
+                    pausePlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+                }).catch(e => console.warn("[PAUSE/PLAY] Resume blocked:", e));
+            } else {
+                targetMedia.pause();
+                if (simliAudio && targetMedia === simliVideo) simliAudio.pause();
+                pausePlayIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+            }
+        });
+    }
+
+    bindTopicPills();
+}
+
+
+/**
+ * ==========================================
+ * SECTION 13: TOPIC PILL EVENT BINDINGS
+ * ==========================================
+ * Attaches click handlers to suggested topic pills in the UI.
+ */
+function bindTopicPills() {
+    const topicPills = document.querySelectorAll('.pill-btn');
+    const userInput = document.getElementById('userInput');
+
+    topicPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const topic = pill.getAttribute('data-topic');
+            
+            if (topic === "Tell me more") {
+                if (!hasAskedFirstQuestion) {
+                    processUserQuery("Who are you and what is your background?", false);
+                } else {
+                    processUserQuery(lastAskedQuery, true);
+                }
+            } else {
+                hasAskedFirstQuestion = true;
+                if (userInput) userInput.value = topic;
+                processUserQuery(topic, false);
+            }
+        });
+    });
+}
+
+
+/**
+ * ==========================================
+ * SECTION 14: USER QUERY PROCESSOR & ROUTER
+ * ==========================================
+ * Core routing pipeline: checks local Fuse.js FAQ matches first, 
+ * then falls back to the Netlify LLM chat function if no local asset matches.
+ */
+async function processUserQuery(query, isFollowUp = false) {
+    if (currentFetchController) currentFetchController.abort();
+    currentFetchController = new AbortController();
+
+    stopCurrentSpeech();
+
+    const userInput = document.getElementById('userInput');
+    const originalPlaceholder = userInput ? userInput.placeholder : "";
+    if (userInput) {
+        userInput.value = "";
+        userInput.placeholder = "Dr. Leon is thinking...";
+        userInput.disabled = true;
+    }
+
+    if (!isFollowUp) {
+        hasAskedFirstQuestion = true;
+        lastAskedQuery = query;
+    }
+    
+    const q = query.toLowerCase();
+    updateRelatedTopics(q);
+
+    if (fuseInstance && faqList.length > 0 && !isFollowUp) {
+        const results = fuseInstance.search(query);
+        if (results.length > 0 && results[0].score <= 0.30) {
+            console.log(`[FUZZY MATCH] Found match "${results[0].item.button_label}" with score ${results[0].score}`);
+            if (userInput) {
+                userInput.placeholder = originalPlaceholder;
+                userInput.disabled = false;
+            }
+            await playLocalFaqAsset(results[0].item);
+            return;
+        }
+    }
+
+    try {
+        const response = await fetch('/.netlify/functions/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: currentFetchController.signal,
+            body: JSON.stringify({ 
+                prompt: query, 
+                isFollowUp: isFollowUp
+            })
+        });
+
+        if (userInput) {
+            userInput.placeholder = originalPlaceholder;
+            userInput.disabled = false;
+        }
+
+        if (response.ok) {
+            const data = await response.json();
+            handleAudioPlayback(data.audio);
+            return;
+        }
+    } catch (error) {
+        if (userInput) {
+            userInput.placeholder = originalPlaceholder;
+            userInput.disabled = false;
+        }
+        if (error.name !== 'AbortError') {
+            console.error("[DR. LEON ERROR] Fetch error:", error);
+        }
+    }
+}
+
+
+/**
+ * ==========================================
+ * SECTION 15: DYNAMIC RELATED TOPICS UPDATER
+ * ==========================================
+ * Updates and renders relevant topic recommendation pills in the UI based on conversation context.
+ */
+function updateRelatedTopics(queryKey) {
+    const topicPillsContainer = document.getElementById('topicPills');
+    if (!topicPillsContainer) return;
+
+    let newPillsHTML = `<button class="pill-btn primary" data-topic="Tell me more">Tell me more</button>`;
+
+    const topics = [
+        "What is Vibe Coding?",
+        "Do I need a Computer Science degree?",
+        "What is the role of JavaScript?",
+        "What are the best AI coding tools?",
+        "What is Prompt Engineering?",
+        "How does 4-Part Prompt Formula work?",
+        "How do I connect external web APIs?",
+        "How do I debug errors in my code?",
+        "How was this application built?",
+        "Who is Dr. Leon Hawthorne?"
+    ];
+
+    topics.forEach(topic => {
+        newPillsHTML += `<button class="pill-btn" data-topic="${topic}">${topic}</button>`;
+    });
+
+    topicPillsContainer.innerHTML = newPillsHTML;
+    bindTopicPills(); 
+}
+
+
+/**
+ * ==========================================
+ * SECTION 16: MOBILE AUTO-PLAY & GESTURE BYPASS FOR WEBRTC
+ * ==========================================
+ * Automatically unlocks media playback on iOS, Chrome, and Safari mobile browsers 
+ * upon the user's first tap or click interaction, ensuring WebKit audio context resumption.
+ */
+document.addEventListener('click', function unlockAudioAndVideo() {
+    const audioEl = document.getElementById('simli-audio');
+    const videoEl = document.getElementById('simli-video');
+    
+    if (audioEl) {
+        audioEl.muted = false;
+        audioEl.volume = 1.0;
+        audioEl.play().catch(() => {});
+    }
+    if (videoEl) {
+        videoEl.play().catch(() => {});
+    }
+
+    if (window.AudioContext || window.webkitAudioContext) {
+        const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (tempCtx.state === 'suspended') {
+            tempCtx.resume();
+        }
+    }
+    
+    document.removeEventListener('click', unlockAudioAndVideo);
+}, { once: true });
