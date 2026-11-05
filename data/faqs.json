@@ -137,7 +137,7 @@
   {
     "id": "faq_16",
     "button_label": "JavaScript Role",
-    "keywords": ["javascript overview", "what is js", "interactivity", "web logic"],
+    "keywords": ["javascript overview", "what is javascript", "what is js", "interactivity", "web logic"],
     "question": "What is JavaScript's role in Vibe Coding?",
     "answer": "JavaScript functions as the dynamic engine of Vibe Coding, managing core webpage interactivity, asynchronous API requests, DOM manipulation, and complex application logic that brings static layouts to life.",
     "video_file": "assets/video/faq_16.mp4",
