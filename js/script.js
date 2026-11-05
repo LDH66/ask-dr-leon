@@ -619,6 +619,12 @@ function bindTopicPills() {
  * then falls back to the Netlify LLM chat function if no local asset matches.
  */
 async function processUserQuery(query, isFollowUp = false) {
+    // Guard against null, undefined, or empty queries locking up the input box
+    if (!query || typeof query !== 'string' || query.trim() === "") {
+        console.warn("[WARN] Attempted to process an empty or null query.");
+        return;
+    }
+
     if (currentFetchController) currentFetchController.abort();
     currentFetchController = new AbortController();
 
@@ -686,7 +692,6 @@ async function processUserQuery(query, isFollowUp = false) {
         }
     }
 }
-
 
 /**
  * ==========================================
