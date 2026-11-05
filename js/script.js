@@ -430,7 +430,6 @@ function bindTopicPills() {
             } else {
                 hasAskedFirstQuestion = true;
                 if (userInput) userInput.value = topic;
-                // Route button clicks through the exact same fuzzy matching query processor
                 processUserQuery(topic, false);
             }
         });
@@ -461,6 +460,30 @@ async function processUserQuery(query, isFollowUp = false) {
 
     // 1. Check Fuzzy Match against loaded FAQs across button_label, question, keywords, and answer
     if (fuseInstance && faqList.length > 0 && !isFollowUp) {
+        // Direct synonym override to ensure UI pills like "What is JavaScript?" instantly match faq_16
+        const buttonSynonyms = {
+            "what is javascript?": "faq_16",
+            "what is html?": "faq_17",
+            "what is css?": "faq_18",
+            "what is vibe coding?": "faq_04",
+            "4-part prompt formula": "faq_05",
+            "connecting apis": "faq_09",
+            "prompt engineering": "faq_15"
+        };
+        const cleanQuery = query.toLowerCase().trim();
+        if (buttonSynonyms[cleanQuery]) {
+            const exactMatch = faqList.find(f => f.id === buttonSynonyms[cleanQuery]);
+            if (exactMatch) {
+                console.log(`[SYNONYM MATCH] Matched "${query}" directly to ${exactMatch.id}`);
+                if (userInput) {
+                    userInput.placeholder = originalPlaceholder;
+                    userInput.disabled = false;
+                }
+                await playLocalFaqAsset(exactMatch);
+                return;
+            }
+        }
+
         const results = fuseInstance.search(query);
         if (results.length > 0 && results[0].score <= 0.30) {
             console.log(`[FUZZY MATCH] Found match "${results[0].item.button_label}" with score ${results[0].score}`);
