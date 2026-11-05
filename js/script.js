@@ -470,12 +470,12 @@ async function sendAudioToBackend(audioBlob) {
  * ==========================================
  * SECTION 12: UI INPUT & BUTTON HANDLERS
  * ==========================================
- * Binds click and keypress listeners to text input submissions and audio controls.
+ * Binds click and keypress listeners to text input submissions, audio controls, and the pause/play toggle.
  */
 function setupUIHandlers() {
     const submitBtn = document.getElementById('submitBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
-    const pausePlayBtn = document.getElementById('pausePlayBtn');
+    const pausePlayBtn =, document.getElementById('pausePlayBtn');
     const pausePlayIcon = document.getElementById('pausePlayIcon');
     const userInput = document.getElementById('userInput');
 
@@ -507,30 +507,29 @@ function setupUIHandlers() {
     if (pausePlayBtn && pausePlayIcon) {
         pausePlayBtn.addEventListener('click', () => {
             const faqVideo = document.getElementById('faq-video');
+            const simliVideo = document.getElementById('simli-video');
             const simliAudio = document.getElementById('simli-audio');
             const activeAudio = window.currentAudio;
 
             let targetMedia = null;
-            if (faqVideo && faqVideo.style.display === 'block' && !faqVideo.paused) {
+            if (faqVideo && faqVideo.style.display === 'block') {
                 targetMedia = faqVideo;
-            } else if (faqVideo && faqVideo.style.display === 'block' && faqVideo.ended === false && faqVideo.currentTime > 0) {
-                targetMedia = faqVideo;
-            } else if (activeAudio && !activeAudio.paused) {
-                targetMedia = activeAudio;
-            } else if (simliAudio && !simliAudio.paused) {
-                targetMedia = simliAudio;
+            } else if (simliVideo && simliVideo.style.display === 'block') {
+                targetMedia = simliVideo;
             } else {
-                targetMedia = activeAudio || faqVideo || simliAudio;
+                targetMedia = activeAudio || simliAudio;
             }
 
             if (!targetMedia) return;
 
             if (targetMedia.paused) {
                 targetMedia.play().then(() => {
+                    if (simliAudio && targetMedia === simliVideo) simliAudio.play().catch(e => {});
                     pausePlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
                 }).catch(e => console.warn("[PAUSE/PLAY] Resume blocked:", e));
             } else {
                 targetMedia.pause();
+                if (simliAudio && targetMedia === simliVideo) simliAudio.pause();
                 pausePlayIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
             }
         });
@@ -538,9 +537,6 @@ function setupUIHandlers() {
 
     bindTopicPills();
 }
-
-
-/**
  * ==========================================
  * SECTION 13: TOPIC PILL EVENT BINDINGS
  * ==========================================
