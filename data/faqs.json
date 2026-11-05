@@ -1,18 +1,18 @@
 [
   {
     "id": "faq_01",
-    "button_label": "Who is Dr. Leon?",
-    "keywords": ["who are you", "who is leon", "leon hawthorne", "introduce yourself"],
-    "question": "Who are you and what is your background?",
+    "button_label": "Who is Dr. Leon Hawthorne?",
+    "keywords": ["who are you", "who is leon", "leon hawthorne", "introduce yourself", "dr leon hawthorne"],
+    "question": "Who is Dr. Leon Hawthorne?",
     "answer": "I am Dr. Leon Hawthorne. I'm a media entrepreneur and the Director of the MA Degree Programme in Artificial Intelligence and Digital Media Production at Cardiff University, where professional creative workflows, AI-assisted software development, and interactive storytelling intersect to shape the future.",
     "video_file": "assets/video/faq_01.mp4",
     "audio_file": "assets/audio/faq_01.mp3"
   },
   {
     "id": "faq_02",
-    "button_label": "How was this built?",
-    "keywords": ["how was this app made", "how did you build this", "tech stack", "architecture"],
-    "question": "How was this app made?",
+    "button_label": "How was this application built?",
+    "keywords": ["how was this app made", "how did you build this", "tech stack", "architecture", "application built"],
+    "question": "How was this application built?",
     "answer": "The Ask Dr. Leon application represents a hybrid Vibe Coding build crafted using HTML, CSS, JavaScript, Netlify serverless functions, OpenAI intelligence models, Fish Audio speech synthesis, and Simli WebRTC avatar streaming pipelines.",
     "video_file": "assets/video/faq_02.mp4",
     "audio_file": "assets/audio/faq_02.mp3"
@@ -37,18 +37,18 @@
   },
   {
     "id": "faq_05",
-    "button_label": "4-Part Prompt Formula",
+    "button_label": "How does 4-Part Prompt Formula work?",
     "keywords": ["4 part prompt formula", "prompting strategy", "how to write prompts"],
-    "question": "What is the 4-Part Prompt Formula?",
+    "question": "How does 4-Part Prompt Formula work?",
     "answer": "Structured AI prompting through the 4-Part Prompt Formula establishes precise control by clearly defining Role, Context, Task, and strict Constraints to guarantee accurate, production-ready artificial intelligence code outputs every single time.",
     "video_file": "assets/video/faq_05.mp4",
     "audio_file": "assets/audio/faq_05.mp3"
   },
   {
     "id": "faq_06",
-    "button_label": "Need CS Background?",
-    "keywords": ["do i need to learn coding", "no code", "programming background", "syntax"],
-    "question": "Do I need a Computer Science background for Vibe Coding?",
+    "button_label": "Do I need a Computer Science degree?",
+    "keywords": ["do i need to learn coding", "no code", "programming background", "syntax", "computer science degree"],
+    "question": "Do I need a Computer Science degree?",
     "answer": "Computer Science degrees or traditional programming backgrounds are entirely unnecessary for successful Vibe Coding, as most modern creators build sophisticated applications with little to no prior manual coding experience by focusing instead on overarching system architecture and creative direction.",
     "video_file": "assets/video/faq_06.mp4",
     "audio_file": "assets/audio/faq_06.mp3"
@@ -73,27 +73,27 @@
   },
   {
     "id": "faq_09",
-    "button_label": "Connecting APIs",
-    "keywords": ["connecting apis", "api integration", "fetch api", "backend services"],
-    "question": "How do I connect external APIs using Vibe Coding?",
+    "button_label": "How do I connect external web APIs?",
+    "keywords": ["connecting apis", "api integration", "fetch api", "backend services", "external web apis"],
+    "question": "How do I connect external web APIs?",
     "answer": "External API integration during Vibe Coding sessions involves instructing your artificial intelligence development assistant to write robust fetch handlers, secure serverless endpoints, and data parsing routines to seamlessly link live third-party services and media databases.",
     "video_file": "assets/video/faq_09.mp4",
     "audio_file": "assets/audio/faq_09.mp3"
   },
   {
     "id": "faq_10",
-    "button_label": "Debugging Errors",
-    "keywords": ["debugging", "fix errors", "broken code", "console errors"],
-    "question": "How do I debug errors when Vibe Coding?",
+    "button_label": "How do I debug errors in my code?",
+    "keywords": ["debugging", "fix errors", "broken code", "console errors", "debug errors"],
+    "question": "How do I debug errors in my code?",
     "answer": "Error debugging and troubleshooting during Vibe Coding workflows require copying raw console logs, error stacks, or unexpected visual behavior directly back into your AI prompt window to receive step-by-step diagnostic fixes and corrected code blocks instantly.",
     "video_file": "assets/video/faq_10.mp4",
     "audio_file": "assets/audio/faq_10.mp3"
   },
   {
     "id": "faq_11",
-    "button_label": "Best AI Tools",
+    "button_label": "What are the best AI coding tools?",
     "keywords": ["best ai coding tools", "cursor", "v0", "replit", "copilot"],
-    "question": "What are the best AI tools for Vibe Coding?",
+    "question": "What are the best AI coding tools?",
     "answer": "Modern artificial intelligence ecosystems offer numerous powerful tools for Vibe Coding, ranging from free conversational language models like ChatGPT and Gemini to specialized development environments like Cursor, VS Code with Copilot, and component builders like v0.",
     "video_file": "assets/video/faq_11.mp4",
     "audio_file": "assets/audio/faq_11.mp3"
@@ -127,18 +127,18 @@
   },
   {
     "id": "faq_15",
-    "button_label": "Prompt Engineering",
+    "button_label": "What is Prompt Engineering?",
     "keywords": ["prompt engineering", "better prompts", "ai instructions"],
-    "question": "What is Prompt Engineering in software creation?",
+    "question": "What is Prompt Engineering?",
     "answer": "Prompt Engineering represents the essential technical skill of structuring clear instructions, pre-defining data schemas, and requesting modular code components to maximize the accuracy and reliability of artificial intelligence generation.",
     "video_file": "assets/video/faq_15.mp4",
     "audio_file": "assets/audio/faq_15.mp3"
   },
   {
     "id": "faq_16",
-    "button_label": "JavaScript Role",
-    "keywords": ["javascript overview", "what is javascript", "what is js", "interactivity", "web logic"],
-    "question": "What is JavaScript's role in Vibe Coding?",
+    "button_label": "What is the role of JavaScript?",
+    "keywords": ["javascript overview", "what is javascript", "what is js", "interactivity", "web logic", "role of javascript"],
+    "question": "What is the role of JavaScript?",
     "answer": "JavaScript functions as the dynamic engine of Vibe Coding, managing core webpage interactivity, asynchronous API requests, DOM manipulation, and complex application logic that brings static layouts to life.",
     "video_file": "assets/video/faq_16.mp4",
     "audio_file": "assets/audio/faq_16.mp3"
