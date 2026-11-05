@@ -475,7 +475,7 @@ async function sendAudioToBackend(audioBlob) {
 function setupUIHandlers() {
     const submitBtn = document.getElementById('submitBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
-    const pausePlayBtn =, document.getElementById('pausePlayBtn');
+    const pausePlayBtn = document.getElementById('pausePlayBtn');
     const pausePlayIcon = document.getElementById('pausePlayIcon');
     const userInput = document.getElementById('userInput');
 
@@ -537,6 +537,7 @@ function setupUIHandlers() {
 
     bindTopicPills();
 }
+/**
  * ==========================================
  * SECTION 13: TOPIC PILL EVENT BINDINGS
  * ==========================================
