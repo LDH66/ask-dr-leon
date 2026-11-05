@@ -38,9 +38,8 @@ async function loadFaqsAndInitFuse() {
 }
 
 async function initSimli() {
-  if (currentMode !== "video") return; // Do not initialize Simli if user is in Audio-only mode
+  if (currentMode !== "video") return;
 
-  // Ensure thorough cleanup of any existing client and wait for it to release rate limits
   if (simliClient) {
     try {
       await simliClient.close();
@@ -48,28 +47,20 @@ async function initSimli() {
       console.warn("[SIMLI] Previous client cleanup warning:", e);
     }
     simliClient = null;
-    await new Promise(resolve => setTimeout(resolve, 800)); // Brief safety pause to prevent rate limiting
+    await new Promise(resolve => setTimeout(resolve, 800));
   }
 
   try {
     const res = await fetch('/.netlify/functions/simli-token', { method: 'POST' });
     const data = await res.json();
-    
-    console.log("[SIMLI] Token response from backend:", data);
     const sessionToken = data.session_token || data.token;
 
-    if (!sessionToken) {
-      console.error("[SIMLI] Failed to retrieve session token string from Netlify.");
-      return;
-    }
+    if (!sessionToken) return;
 
     const videoElement = document.getElementById("simli-video");
     const audioElement = document.getElementById("simli-audio");
 
-    if (!videoElement || !audioElement) {
-      console.error("[SIMLI ERROR] Missing video or audio element in DOM.");
-      return;
-    }
+    if (!videoElement || !audioElement) return;
 
     simliClient = new SimliClient(
       sessionToken,
@@ -81,22 +72,14 @@ async function initSimli() {
     );
 
     simliClient.on("start", () => {
-      console.log("[SIMLI] Avatar stream connected and visible successfully! 🚀");
-      
       if (audioElement && isAudioUnlocked) {
         audioElement.muted = false;
         audioElement.volume = 1.0;
-        audioElement.play().catch(e => console.warn("[SIMLI] Audio play warning:", e));
+        audioElement.play().catch(e => {});
       }
     });
 
-    simliClient.on("error", (err) => {
-      console.error("[SIMLI ERROR] Runtime error event:", err);
-    });
-
     await simliClient.start();
-    console.log("[SIMLI] client.start() connected successfully.");
-
   } catch (err) {
     console.error("[SIMLI ERROR] Initialization failed:", err);
   }
@@ -119,11 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioElement) {
             audioElement.muted = false;
             audioElement.volume = 1.0;
-            audioElement.play().then(() => {
-                console.log("[AUDIO] iOS Safari audio element unlocked successfully.");
-            }).catch(e => {
-                console.warn("[AUDIO] Unlock play warning:", e);
-            });
+            audioElement.play().then(() => {}).catch(e => {});
         }
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
@@ -157,16 +136,12 @@ function setupModeToggle() {
             mediaModeBtn.classList.remove('leon-active');
             
             if (simliClient) {
-                try {
-                    await simliClient.close();
-                } catch (e) {}
+                try { await simliClient.close(); } catch (e) {}
                 simliClient = null;
             }
 
             if (simliVideo) simliVideo.style.display = 'none';
             if (defaultAvatarImg) defaultAvatarImg.style.display = 'block';
-
-            console.log("[DR. LEON] Switched to Audio-only mode (Still image + Fish Audio)");
         } else {
             currentMode = "video";
             mediaModeBtn.textContent = "Mode: Video";
@@ -176,8 +151,6 @@ function setupModeToggle() {
             if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
 
             initSimli();
-
-            console.log("[DR. LEON] Switched to Video mode (Simli Avatar + Fish Audio)");
         }
     });
 }
@@ -208,28 +181,17 @@ function stopCurrentSpeech() {
 
     if (simliClient && currentMode === "video") {
         try {
-            if (typeof simliClient.ClearBuffer === 'function') {
-                simliClient.ClearBuffer();
-            } else if (typeof simliClient.clearBuffer === 'function') {
-                simliClient.clearBuffer();
-            } else if (typeof simliClient.clearAudioData === 'function') {
-                simliClient.clearAudioData();
-            }
-        } catch (e) {
-            console.warn("[SIMLI] Buffer clear warning:", e);
-        }
+            if (typeof simliClient.ClearBuffer === 'function') simliClient.ClearBuffer();
+            else if (typeof simliClient.clearBuffer === 'function') simliClient.clearBuffer();
+        } catch (e) {}
     }
 }
 
-// Play local pre-recorded assets when an FAQ match is found (>= 70% confidence / score <= 0.3)
 async function playLocalFaqAsset(faqItem) {
     stopCurrentSpeech();
 
-    // If switching to local video playback, cleanly close Simli to prevent background WebRTC resource locks/rate limits
     if (simliClient && currentMode === "video") {
-        try {
-            await simliClient.close();
-        } catch (e) {}
+        try { await simliClient.close(); } catch (e) {}
         simliClient = null;
     }
 
@@ -267,7 +229,6 @@ async function playLocalFaqAsset(faqItem) {
 async function handleAudioPlayback(base64Audio) {
     if (!base64Audio) return;
 
-    // When falling back to Netlify LLM / Simli streaming, ensure Simli is active if in video mode
     if (currentMode === "video" && !simliClient) {
         await initSimli();
     }
@@ -291,9 +252,7 @@ async function handleAudioPlayback(base64Audio) {
             const binaryString = atob(base64Audio);
             const len = binaryString.length;
             const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
+            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
 
             const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
             const channelData = audioBuffer.getChannelData(0); 
@@ -305,28 +264,22 @@ async function handleAudioPlayback(base64Audio) {
             }
             
             const audioChunkData = new Uint8Array(pcm16.buffer);
-
             if (typeof simliClient.sendAudioDataImmediate === 'function') {
                 simliClient.sendAudioDataImmediate(audioChunkData);
             } else {
                 simliClient.sendAudioData(audioChunkData);
             }
 
-            if (audioElement) {
-                audioElement.play().catch(e => console.warn("[SIMLI] Audio element play retry:", e));
-            }
+            if (audioElement) audioElement.play().catch(e => {});
         } catch (e) {
             console.warn("[SIMLI] PCM conversion fallback:", e);
         }
     } else {
-        if (window.currentAudio) {
-            window.currentAudio.pause();
-        }
+        if (window.currentAudio) window.currentAudio.pause();
         const audioBlob = b64toBlob(base64Audio, 'audio/mp3');
         const audioUrl = URL.createObjectURL(audioBlob);
-        
         window.currentAudio = new Audio(audioUrl);
-        window.currentAudio.play().catch(e => console.warn("Audio play error:", e));
+        window.currentAudio.play().catch(e => {});
     }
 }
 
@@ -336,11 +289,8 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
         const slice = byteCharacters.slice(offset, offset + sliceSize);
         const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
+        for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+        byteArrays.push(new Uint8Array(byteNumbers));
     }
     return new Blob(byteArrays, { type: contentType });
 }
@@ -362,9 +312,7 @@ function setupNetlifyMicrophone() {
                 });
 
                 let options = { mimeType: 'audio/mp4' };
-                if (!MediaRecorder.isTypeSupported('audio/mp4')) {
-                    options = { mimeType: 'audio/webm' };
-                }
+                if (!MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/webm' };
 
                 mediaRecorder = new MediaRecorder(stream, options);
                 audioChunks = [];
@@ -401,15 +349,11 @@ function setupNetlifyMicrophone() {
                     listeningIndicator.textContent = "Listening... Tap mic again to send.";
                     listeningIndicator.style.display = 'block';
                 }
-
             } catch (err) {
-                console.warn("Microphone error:", err);
                 alert("Microphone access denied or unsupported.");
             }
         } else {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-            }
+            if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
             isRecording = false;
             micBtn.classList.remove('listening');
         }
@@ -420,7 +364,6 @@ async function sendAudioToBackend(audioBlob) {
     try {
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
-        
         return new Promise((resolve) => {
             reader.onloadend = async () => {
                 const base64Audio = reader.result.split(',')[1];
@@ -433,7 +376,6 @@ async function sendAudioToBackend(audioBlob) {
             };
         });
     } catch (error) {
-        console.error("Transcription error:", error);
         return null;
     }
 }
@@ -465,9 +407,7 @@ function setupUIHandlers() {
     }
 
     if (stopAudioBtn) {
-        stopAudioBtn.addEventListener('click', () => {
-            stopCurrentSpeech();
-        });
+        stopAudioBtn.addEventListener('click', () => stopCurrentSpeech());
     }
 
     bindTopicPills();
@@ -483,13 +423,14 @@ function bindTopicPills() {
             
             if (topic === "Tell me more") {
                 if (!hasAskedFirstQuestion) {
-                    processUserQuery("What is this site about and what is its core purpose?", false);
+                    processUserQuery("Who are you and what is your background?", false);
                 } else {
                     processUserQuery(lastAskedQuery, true);
                 }
             } else {
                 hasAskedFirstQuestion = true;
                 if (userInput) userInput.value = topic;
+                // Route button clicks through the exact same fuzzy matching query processor
                 processUserQuery(topic, false);
             }
         });
@@ -497,9 +438,7 @@ function bindTopicPills() {
 }
 
 async function processUserQuery(query, isFollowUp = false) {
-    if (currentFetchController) {
-        currentFetchController.abort();
-    }
+    if (currentFetchController) currentFetchController.abort();
     currentFetchController = new AbortController();
 
     stopCurrentSpeech();
@@ -520,7 +459,7 @@ async function processUserQuery(query, isFollowUp = false) {
     const q = query.toLowerCase();
     updateRelatedTopics(q);
 
-    // 1. Check Fuzzy Match against loaded FAQs (Threshold <= 0.30 represents >= 70% match)
+    // 1. Check Fuzzy Match against loaded FAQs across button_label, question, keywords, and answer
     if (fuseInstance && faqList.length > 0 && !isFollowUp) {
         const results = fuseInstance.search(query);
         if (results.length > 0 && results[0].score <= 0.30) {
@@ -555,17 +494,13 @@ async function processUserQuery(query, isFollowUp = false) {
             const data = await response.json();
             handleAudioPlayback(data.audio);
             return;
-        } else {
-            console.error("[DR. LEON ERROR] Server returned status:", response.status);
         }
     } catch (error) {
         if (userInput) {
             userInput.placeholder = originalPlaceholder;
             userInput.disabled = false;
         }
-        if (error.name === 'AbortError') {
-            console.log("[DR. LEON] Previous request superseded by new click.");
-        } else {
+        if (error.name !== 'AbortError') {
             console.error("[DR. LEON ERROR] Fetch error:", error);
         }
     }
