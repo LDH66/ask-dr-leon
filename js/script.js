@@ -40,6 +40,7 @@ async function loadFaqsAndInitFuse() {
 async function initSimli() {
   if (currentMode !== "video") return; // Do not initialize Simli if user is in Audio-only mode
 
+  // Ensure thorough cleanup of any existing client and wait for it to release rate limits
   if (simliClient) {
     try {
       await simliClient.close();
@@ -47,6 +48,7 @@ async function initSimli() {
       console.warn("[SIMLI] Previous client cleanup warning:", e);
     }
     simliClient = null;
+    await new Promise(resolve => setTimeout(resolve, 800)); // Brief safety pause to prevent rate limiting
   }
 
   try {
@@ -150,12 +152,10 @@ function setupModeToggle() {
         stopCurrentSpeech();
 
         if (currentMode === "video") {
-            // Switch to Audio Mode
             currentMode = "audio";
             mediaModeBtn.textContent = "Mode: Audio";
             mediaModeBtn.classList.remove('leon-active');
             
-            // Disconnect Simli to save rate limits and bandwidth
             if (simliClient) {
                 try {
                     await simliClient.close();
@@ -163,22 +163,18 @@ function setupModeToggle() {
                 simliClient = null;
             }
 
-            // Swap visual elements
             if (simliVideo) simliVideo.style.display = 'none';
             if (defaultAvatarImg) defaultAvatarImg.style.display = 'block';
 
             console.log("[DR. LEON] Switched to Audio-only mode (Still image + Fish Audio)");
         } else {
-            // Switch to Video Mode
             currentMode = "video";
             mediaModeBtn.textContent = "Mode: Video";
             mediaModeBtn.classList.add('leon-active');
 
-            // Swap visual elements
             if (simliVideo) simliVideo.style.display = 'block';
             if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
 
-            // Reconnect Simli avatar
             initSimli();
 
             console.log("[DR. LEON] Switched to Video mode (Simli Avatar + Fish Audio)");
@@ -229,12 +225,19 @@ function stopCurrentSpeech() {
 async function playLocalFaqAsset(faqItem) {
     stopCurrentSpeech();
 
+    // If switching to local video playback, cleanly close Simli to prevent background WebRTC resource locks/rate limits
+    if (simliClient && currentMode === "video") {
+        try {
+            await simliClient.close();
+        } catch (e) {}
+        simliClient = null;
+    }
+
     const simliVideo = document.getElementById("simli-video");
     const faqVideo = document.getElementById("faq-video");
     const defaultAvatarImg = document.getElementById("default-avatar-img");
 
     if (currentMode === "video") {
-        // Video Mode: play pre-recorded .mp4 video file from assets/video/
         if (faqVideo && faqItem.video_file) {
             if (simliVideo) simliVideo.style.display = 'none';
             if (defaultAvatarImg) defaultAvatarImg.style.display = 'none';
@@ -249,7 +252,6 @@ async function playLocalFaqAsset(faqItem) {
             }
         }
     } else {
-        // Audio Mode: play pre-recorded .mp3 audio file from assets/audio/ with static image
         if (defaultAvatarImg) defaultAvatarImg.style.display = 'block';
         if (simliVideo) simliVideo.style.display = 'none';
         if (faqVideo) faqVideo.style.display = 'none';
@@ -265,15 +267,19 @@ async function playLocalFaqAsset(faqItem) {
 async function handleAudioPlayback(base64Audio) {
     if (!base64Audio) return;
 
+    // When falling back to Netlify LLM / Simli streaming, ensure Simli is active if in video mode
+    if (currentMode === "video" && !simliClient) {
+        await initSimli();
+    }
+
     const audioElement = document.getElementById("simli-audio");
     if (audioElement) {
         audioElement.muted = false;
         audioElement.volume = 1.0;
-        audioElement.play().catch(() => {}); // Force iOS to wake up the audio track
+        audioElement.play().catch(() => {});
     }
 
     if (currentMode === "video" && simliClient) {
-        // Video Mode: Stream audio chunks into Simli for lip-syncing
         try {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
@@ -313,7 +319,6 @@ async function handleAudioPlayback(base64Audio) {
             console.warn("[SIMLI] PCM conversion fallback:", e);
         }
     } else {
-        // Audio Mode: Play MP3 audio directly via standard HTML5 Audio with Default-image.jpg on screen
         if (window.currentAudio) {
             window.currentAudio.pause();
         }
@@ -344,7 +349,7 @@ function setupNetlifyMicrophone() {
     const micBtn = document.getElementById('micBtn');
     const listeningIndicator = document.getElementById('listeningIndicator');
 
-    if (!micBtn) return; // Null safety guard prevents crashes
+    if (!micBtn) return;
     micBtn.style.display = 'flex';
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
